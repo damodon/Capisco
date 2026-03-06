@@ -141,10 +141,13 @@ function initCodeMirror() {
 
 function switchMode(mode) {
   currentMode = mode;
-  document.getElementById('tab-sql').classList.toggle('active', mode === 'sql');
-  document.getElementById('tab-table').classList.toggle('active', mode === 'table');
-  document.getElementById('panel-sql').classList.toggle('active', mode === 'sql');
-  document.getElementById('panel-table').classList.toggle('active', mode === 'table');
+  document.getElementById('tab-sql').classList.toggle('active',    mode === 'sql');
+  document.getElementById('tab-table').classList.toggle('active',  mode === 'table');
+  document.getElementById('tab-visual').classList.toggle('active', mode === 'visual');
+  document.getElementById('panel-sql').classList.toggle('active',    mode === 'sql');
+  document.getElementById('panel-table').classList.toggle('active',  mode === 'table');
+  document.getElementById('panel-visual').classList.toggle('active', mode === 'visual');
+  if (mode === 'visual') initVisualMode();
   lucide.createIcons();
 }
 
@@ -421,6 +424,282 @@ function togglePreview() {
   document.getElementById('preview-body').classList.toggle('open', previewOpen);
   document.getElementById('preview-toggle-btn').classList.toggle('open', previewOpen);
   lucide.createIcons();
+}
+
+/* ── VISUAL QUERY BUILDER ──────────────────────────────────── */
+
+const SCHEMA_TREE_DATA = [
+  { schema: 'reporting', tables: ['orders', 'customers', 'products', 'order_items', 'campaigns'] },
+  { schema: 'public',    tables: ['lookup_regions', 'lookup_currencies', 'settings'] },
+  { schema: 'staging',   tables: ['stg_orders', 'stg_customers', 'stg_events'] },
+  { schema: 'raw',       tables: ['raw_events', 'raw_sessions', 'raw_pageviews'] },
+];
+
+// Tables currently on the canvas
+let vTables = [
+  {
+    schema: 'reporting', table: 'orders', alias: 'o',
+    cols: TABLE_COLUMNS['orders'].map((c, i) => ({ ...c, selected: [0,1,3,4,6,7,9].includes(i) }))
+  },
+  {
+    schema: 'reporting', table: 'customers', alias: 'c',
+    cols: TABLE_COLUMNS['customers'].map((c, i) => ({ ...c, selected: [0,1,2].includes(i) }))
+  },
+];
+
+let vJoins = [
+  { leftTable: 'orders', leftCol: 'customer_id', rightTable: 'customers', rightCol: 'customer_id', type: 'INNER' }
+];
+
+let vFilters = [
+  { field: 'revenue', op: '>', value: '0' }
+];
+
+let schemaOpen = { reporting: true, public: false, staging: false, raw: false };
+
+let vInited = false;
+
+function initVisualMode() {
+  if (!document.getElementById('schema-tree')) return;
+  renderSchemaTree();
+  renderCanvasTables();
+  renderVFilters();
+  updateVFieldCount();
+  vInited = true;
+}
+
+/* Schema browser */
+function renderSchemaTree() {
+  const tree = document.getElementById('schema-tree');
+  if (!tree) return;
+  let html = '';
+  SCHEMA_TREE_DATA.forEach(s => {
+    const isOpen = schemaOpen[s.schema];
+    html += `
+      <div class="schema-item schema-hd" onclick="toggleSchemaNode('${s.schema}')">
+        <i data-lucide="${isOpen ? 'chevron-down' : 'chevron-right'}"></i>
+        <i data-lucide="layers-2"></i>
+        ${s.schema}
+      </div>
+    `;
+    if (isOpen) {
+      s.tables.forEach(t => {
+        const onCanvas = vTables.some(vt => vt.table === t && vt.schema === s.schema);
+        html += `
+          <div class="schema-item tbl-row${onCanvas ? ' tbl-on' : ''}"
+               onclick="vAddTableToCanvas('${s.schema}', '${t}')">
+            <i data-lucide="table-2"></i>
+            ${t}
+            ${onCanvas ? '<i data-lucide="check" style="width:11px;height:11px;margin-left:auto;color:var(--accent);"></i>' : ''}
+          </div>
+        `;
+      });
+    }
+  });
+  tree.innerHTML = html;
+  lucide.createIcons();
+}
+
+function toggleSchemaNode(schema) {
+  schemaOpen[schema] = !schemaOpen[schema];
+  renderSchemaTree();
+}
+
+function vAddTableToCanvas(schema, table) {
+  if (vTables.some(t => t.table === table && t.schema === schema)) return;
+  const cols = TABLE_COLUMNS[table];
+  if (!cols) return; // table not in mock data
+  vTables.push({
+    schema, table,
+    alias: table.charAt(0),
+    cols: cols.map((c, i) => ({ ...c, selected: i < 3 }))
+  });
+  renderSchemaTree();
+  renderCanvasTables();
+  updateVFieldCount();
+}
+
+function vRemoveTable(table) {
+  vTables  = vTables.filter(t => t.table !== table);
+  vJoins   = vJoins.filter(j => j.leftTable !== table && j.rightTable !== table);
+  renderSchemaTree();
+  renderCanvasTables();
+  updateVFieldCount();
+}
+
+function vToggleCol(ti, ci) {
+  if (vTables[ti]) {
+    vTables[ti].cols[ci].selected = !vTables[ti].cols[ci].selected;
+    const cb = document.getElementById(`vcol-${ti}-${ci}`);
+    if (cb) cb.checked = vTables[ti].cols[ci].selected;
+    updateVFieldCount();
+  }
+}
+
+/* Canvas */
+function renderCanvasTables() {
+  const row = document.getElementById('canvas-tables-row');
+  if (!row) return;
+
+  if (vTables.length === 0) {
+    row.innerHTML = `
+      <div style="padding:32px 24px;color:var(--text-3);font-size:13px;text-align:center;">
+        <i data-lucide="mouse-pointer-2" style="width:28px;height:28px;margin:0 auto 10px;display:block;opacity:0.3;"></i>
+        Click a table in the schema browser to add it to the canvas
+      </div>`;
+    lucide.createIcons();
+    return;
+  }
+
+  let html = '';
+  vTables.forEach((t, ti) => {
+    html += `
+      <div class="table-node" id="vnode-${t.table}">
+        <div class="table-node-hd">
+          <i data-lucide="table-2"></i>
+          <span>${t.table}</span>
+          <span class="node-alias">${t.alias}</span>
+          <button class="node-close" onclick="vRemoveTable('${t.table}')">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+        <div class="table-node-cols">
+          ${t.cols.map((col, ci) => `
+            <label class="node-col-row">
+              <input type="checkbox" id="vcol-${ti}-${ci}"
+                     ${col.selected ? 'checked' : ''}
+                     onchange="vToggleCol(${ti}, ${ci})">
+              <span class="node-col-name">${col.name}</span>
+              <span class="node-col-type">${col.type}</span>
+            </label>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Join connector between consecutive tables
+    if (ti < vTables.length - 1) {
+      const next = vTables[ti + 1];
+      const j = vJoins.find(jn =>
+        (jn.leftTable === t.table && jn.rightTable === next.table) ||
+        (jn.rightTable === t.table && jn.leftTable === next.table)
+      ) || { type: 'INNER', leftCol: 'id', rightCol: 'id' };
+
+      html += `
+        <div class="join-connector">
+          <div class="join-line"></div>
+          <div class="join-badge">
+            <select class="join-type-sel" onchange="vUpdateJoinType(${ti}, this.value)">
+              ${['INNER','LEFT','RIGHT','FULL'].map(tp =>
+                `<option value="${tp}"${j.type === tp ? ' selected' : ''}>${tp} JOIN</option>`
+              ).join('')}
+            </select>
+            <div class="join-cond">${t.alias}.${j.leftCol} = ${next.alias}.${j.rightCol}</div>
+          </div>
+          <div class="join-line"></div>
+        </div>
+      `;
+    }
+  });
+
+  row.innerHTML = html;
+  lucide.createIcons();
+}
+
+function vUpdateJoinType(connIdx, type) {
+  if (vJoins[connIdx]) vJoins[connIdx].type = type;
+}
+
+/* Filters */
+function renderVFilters() {
+  const container = document.getElementById('filter-rows');
+  if (!container) return;
+
+  const allFields = vTables.flatMap(t => t.cols.filter(c => c.selected).map(c => c.name));
+  const ops = ['=','!=','>','<','>=','<=','LIKE','IN','IS NULL','IS NOT NULL'];
+
+  container.innerHTML = vFilters.map((f, i) => {
+    const fieldOpts = allFields.map(name =>
+      `<option value="${name}"${name === f.field ? ' selected' : ''}>${name}</option>`
+    ).join('');
+    const opOpts = ops.map(op =>
+      `<option value="${op}"${op === f.op ? ' selected' : ''}>${op}</option>`
+    ).join('');
+    return `
+      <div class="filter-row">
+        <span class="filter-pfx">${i === 0 ? 'WHERE' : 'AND'}</span>
+        <select class="fsel fsel-field" onchange="vUpdateFilter(${i}, 'field', this.value)">${fieldOpts}</select>
+        <select class="fsel fsel-op" onchange="vUpdateFilter(${i}, 'op', this.value)">${opOpts}</select>
+        <input class="fval" type="text" value="${f.value}" placeholder="value"
+               oninput="vUpdateFilter(${i}, 'value', this.value)">
+        <button class="filter-rm" onclick="vRemoveFilter(${i})"><i data-lucide="x"></i></button>
+      </div>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
+function vAddFilter() {
+  const allFields = vTables.flatMap(t => t.cols.filter(c => c.selected).map(c => c.name));
+  vFilters.push({ field: allFields[0] || 'field', op: '=', value: '' });
+  renderVFilters();
+}
+
+function vRemoveFilter(i) { vFilters.splice(i, 1); renderVFilters(); }
+function vUpdateFilter(i, key, value) { if (vFilters[i]) vFilters[i][key] = value; }
+
+function updateVFieldCount() {
+  const lbl = document.getElementById('v-field-count');
+  if (!lbl) return;
+  const total  = vTables.reduce((a, t) => a + t.cols.filter(c => c.selected).length, 0);
+  const tables = vTables.length;
+  lbl.textContent = total > 0
+    ? `${total} field${total !== 1 ? 's' : ''} selected across ${tables} table${tables !== 1 ? 's' : ''}`
+    : 'Select fields from the table cards above';
+}
+
+/* Generate SQL from visual state */
+function vGenerateSQL() {
+  if (vTables.length === 0) { showToast('Add at least one table to generate SQL', true); return; }
+
+  const selects = vTables.flatMap(t =>
+    t.cols.filter(c => c.selected).map(c => `  ${t.alias}.${c.name}`)
+  );
+
+  const from = `FROM ${vTables[0].schema}.${vTables[0].table} ${vTables[0].alias}`;
+
+  const joins = vJoins.map(j => {
+    const rt = vTables.find(t => t.table === j.rightTable);
+    if (!rt) return '';
+    const lt = vTables.find(t => t.table === j.leftTable);
+    return `${j.type} JOIN ${rt.schema}.${rt.table} ${rt.alias} ON ${lt ? lt.alias : j.leftTable}.${j.leftCol} = ${rt.alias}.${j.rightCol}`;
+  }).filter(Boolean);
+
+  const wheres = vFilters
+    .filter(f => f.value || f.op === 'IS NULL' || f.op === 'IS NOT NULL')
+    .map(f => f.op === 'IS NULL' || f.op === 'IS NOT NULL'
+      ? `${f.field} ${f.op}`
+      : `${f.field} ${f.op} ${isNaN(f.value) || f.value === '' ? `'${f.value}'` : f.value}`
+    );
+
+  const orderField = document.getElementById('v-order-field')?.value;
+  const orderDir   = document.getElementById('v-order-dir')?.value || 'DESC';
+  const limit      = document.getElementById('v-limit')?.value || '100';
+
+  let sql = `SELECT\n${selects.join(',\n')}\n${from}`;
+  if (joins.length)  sql += '\n' + joins.join('\n');
+  if (wheres.length) sql += '\nWHERE ' + wheres.join('\n  AND ');
+  if (orderField)    sql += `\nORDER BY ${orderField} ${orderDir}`;
+  sql += `\nLIMIT ${limit}`;
+
+  switchMode('sql');
+  if (cmEditor) { cmEditor.setValue(sql); cmEditor.refresh(); }
+  showToast('SQL generated — review and run when ready');
+}
+
+function vRunQuery() {
+  vGenerateSQL();
+  setTimeout(() => runQuery(), 150);
 }
 
 /* ── FORMAT SQL ────────────────────────────────────────────── */

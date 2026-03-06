@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q4 2025 — Revenue in Focus · Reportr Scrollyteller</title>
+  <style>
+    /* ═══════════════════════════════════════════════════════════
+       RESET & BASE
+    ═══════════════════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green:      #16A34A;
+      --green-light:#DCFCE7;
+      --green-mid:  #86EFAC;
+      --green-dark: #15803D;
+      --green-text: #166534;
+      --blue:       #3B82F6;
+      --blue-light: #DBEAFE;
+      --text-1:     #0F172A;
+      --text-2:     #334155;
+      --text-3:     #64748B;
+      --text-4:     #94A3B8;
+      --border:     #E2E8F0;
+      --surface:    #F8FAFC;
+      --white:      #FFFFFF;
+      --ease:       cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      color: var(--text-1); background: var(--white);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Progress bar ───────────────────────────────────────── */
+    #progress-bar {
+      position: fixed; top: 0; left: 0; height: 3px;
+      background: linear-gradient(90deg, var(--green), var(--blue));
+      width: 0%; z-index: 1000; transition: width 0.1s linear;
+    }
+
+    /* ── Branding bar ───────────────────────────────────────── */
+    .reportr-bar {
+      position: fixed; top: 0; right: 0; z-index: 900;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.9); backdrop-filter: blur(8px);
+      border-bottom-left-radius: 12px;
+      font-size: 12px; color: var(--text-3);
+      border-left: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    }
+    .reportr-bar img { width: 18px; height: 18px; border-radius: 4px; }
+    .reportr-bar strong { color: var(--text-2); font-weight: 600; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 1 — COVER
+    ═══════════════════════════════════════════════════════════ */
+    .cover-section {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #0D1117 0%, #0F2027 50%, #111827 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 60px 24px;
+      position: relative; overflow: hidden;
+    }
+
+    /* Animated background grid */
+    .cover-grid {
+      position: absolute; inset: 0; opacity: 0.05;
+      background-image:
+        linear-gradient(rgba(22,163,74,0.5) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(22,163,74,0.5) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* Floating orbs */
+    .orb {
+      position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.15;
+      animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 { width: 400px; height: 400px; background: var(--green); top: -100px; right: -80px; }
+    .orb-2 { width: 300px; height: 300px; background: var(--blue);  bottom: -60px; left: -80px; animation-delay: -4s; }
+    @keyframes float { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-20px) scale(1.05)} }
+
+    .cover-eyebrow {
+      font-size: 11px; font-weight: 800; letter-spacing: 3px; color: var(--green);
+      text-transform: uppercase; margin-bottom: 20px;
+      animation: fadeUp 1s var(--ease) both;
+    }
+    .cover-title {
+      font-size: clamp(36px, 7vw, 72px); font-weight: 900;
+      color: white; line-height: 1.05; letter-spacing: -2px;
+      max-width: 700px; margin-bottom: 24px;
+      animation: fadeUp 1s 0.15s var(--ease) both;
+    }
+    .cover-title span { color: var(--green); }
+    .cover-sub {
+      font-size: clamp(15px, 2.5vw, 19px); color: rgba(255,255,255,0.5);
+      max-width: 520px; line-height: 1.6; margin-bottom: 48px;
+      animation: fadeUp 1s 0.3s var(--ease) both;
+    }
+
+    .cover-stats {
+      display: flex; gap: 32px; justify-content: center; flex-wrap: wrap;
+      margin-bottom: 60px;
+      animation: fadeUp 1s 0.45s var(--ease) both;
+    }
+    .cover-stat { text-align: center; }
+    .cover-stat-num { font-size: 28px; font-weight: 800; color: white; letter-spacing: -1px; }
+    .cover-stat-label { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .cover-scroll-hint {
+      position: absolute; bottom: 32px;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      animation: fadeUp 1s 0.8s var(--ease) both;
+    }
+    .cover-scroll-hint span { font-size: 10px; color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase; }
+    .scroll-mouse {
+      width: 22px; height: 34px; border: 2px solid rgba(255,255,255,0.25);
+      border-radius: 11px; position: relative;
+    }
+    .scroll-mouse::after {
+      content: ''; position: absolute; top: 5px; left: 50%; transform: translateX(-50%);
+      width: 3px; height: 7px; background: rgba(255,255,255,0.5);
+      border-radius: 2px; animation: scroll-dot 1.5s ease-in-out infinite;
+    }
+    @keyframes scroll-dot { 0%,100%{opacity:1;transform:translateX(-50%) translateY(0)} 50%{opacity:0.3;transform:translateX(-50%) translateY(8px)} }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       STICKY SCROLL SECTIONS — shared
+    ═══════════════════════════════════════════════════════════ */
+    .sticky-section {
+      display: grid;
+      grid-template-columns: 46% 54%;
+      min-height: 100vh;
+      position: relative;
+    }
+    .sticky-section.flipped { grid-template-columns: 54% 46%; }
+
+    /* Sticky chart column */
+    .sticky-chart-col {
+      position: sticky; top: 0; height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: stretch; justify-content: center;
+      background: var(--surface);
+      padding: 32px 24px;
+      border-right: 1px solid var(--border);
+    }
+    .sticky-section.flipped .sticky-chart-col {
+      border-right: none; border-left: 1px solid var(--border);
+      order: 2;
+    }
+
+    .chart-header {
+      margin-bottom: 16px;
+    }
+    .chart-eyebrow { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-4); margin-bottom: 4px; }
+    .chart-title { font-size: 16px; font-weight: 700; color: var(--text-1); }
+    .chart-annotation {
+      font-size: 12.5px; color: var(--text-3); line-height: 1.5;
+      padding: 8px 12px; background: white; border-left: 3px solid var(--green);
+      border-radius: 0 6px 6px 0; margin-top: 12px;
+      transition: all 0.4s var(--ease);
+      min-height: 40px;
+    }
+    .chart-annotation.highlight { border-color: var(--green); color: var(--text-2); }
+
+    .chart-canvas-wrap { flex: 1; position: relative; min-height: 0; }
+    .chart-canvas-wrap canvas { width: 100% !important; }
+
+    /* Controls inside chart col */
+    .chart-controls {
+      display: flex; flex-direction: column; gap: 10px;
+      padding-top: 16px; border-top: 1px solid var(--border);
+      margin-top: 12px;
+    }
+    .ctrl-row {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12.5px;
+    }
+    .ctrl-label { color: var(--text-3); font-weight: 500; white-space: nowrap; min-width: 70px; }
+    .ctrl-input {
+      flex: 1; padding: 5px 10px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 12px; color: var(--text-1);
+      outline: none; transition: border-color 0.2s;
+    }
+    .ctrl-input:focus { border-color: var(--green); }
+    .ctrl-input[type="range"] { padding: 0; border: none; accent-color: var(--green); }
+
+    /* Step dots on chart */
+    .chart-step-dots { display: flex; gap: 6px; padding-top: 8px; align-items: center; }
+    .chart-step-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--border); cursor: pointer;
+      transition: all 0.3s var(--ease);
+    }
+    .chart-step-dot.active { background: var(--green); transform: scale(1.4); }
+    .chart-step-dot-label { font-size: 11px; color: var(--text-3); margin-left: 4px; }
+
+    /* Scroll / text column */
+    .sticky-text-col {
+      padding: 80px 48px;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .sticky-section.flipped .sticky-text-col { order: 1; }
+
+    /* Each scroll step block */
+    .scroll-step {
+      min-height: 60vh;
+      padding: 40px 0;
+      display: flex; flex-direction: column; justify-content: center;
+      opacity: 0.35; transition: opacity 0.4s var(--ease);
+      border-top: 1px dashed transparent;
+    }
+    .scroll-step.active { opacity: 1; border-top-color: var(--green-mid); }
+    .scroll-step:first-child { border-top: none; min-height: 50vh; }
+
+    .step-num {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--green); margin-bottom: 12px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .step-num::before {
+      content: ''; width: 20px; height: 2px; background: var(--green);
+      display: inline-block;
+    }
+    .step-heading {
+      font-size: clamp(20px, 3vw, 28px); font-weight: 800; color: var(--text-1);
+      line-height: 1.2; letter-spacing: -0.5px; margin-bottom: 14px;
+    }
+    .step-body {
+      font-size: 15px; color: var(--text-2); line-height: 1.7; margin-bottom: 16px;
+    }
+    .step-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--green-light); color: var(--green-text);
+      font-size: 12px; font-weight: 700; padding: 4px 12px;
+      border-radius: 20px; border: 1px solid var(--green-mid);
+    }
+
+    /* Inline stat callout */
+    .inline-stat {
+      display: inline-flex; flex-direction: column;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 16px; margin: 12px 0;
+    }
+    .inline-stat-num { font-size: 32px; font-weight: 900; color: var(--green); letter-spacing: -1px; }
+    .inline-stat-label { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 3 — CALLOUT
+    ═══════════════════════════════════════════════════════════ */
+    .callout-section {
+      min-height: 70vh;
+      background: linear-gradient(160deg, #F0FDF4 0%, #DCFCE7 100%);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; padding: 80px 24px;
+      position: relative; overflow: hidden;
+    }
+    .callout-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 60% at 50% 50%, rgba(22,163,74,0.08) 0%, transparent 70%);
+    }
+    .callout-num {
+      font-size: clamp(80px, 15vw, 140px); font-weight: 900;
+      color: var(--green); letter-spacing: -6px; line-height: 1;
+      margin-bottom: 12px; position: relative;
+    }
+    .callout-label { font-size: clamp(20px, 3vw, 30px); font-weight: 800; color: var(--text-1); margin-bottom: 12px; }
+    .callout-sub { font-size: 16px; color: var(--text-3); max-width: 440px; }
+    .callout-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--green); color: white;
+      font-size: 12px; font-weight: 700; padding: 6px 16px;
+      border-radius: 20px; margin-top: 24px;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SECTION 5 — CLOSING
+    ═══════════════════════════════════════════════════════════ */
+    .closing-section {
+      padding: 100px 24px;
+      background: var(--white);
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .closing-inner {
+      max-width: 680px; width: 100%;
+    }
+    .closing-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 2px; color: var(--green); margin-bottom: 20px;
+    }
+    .closing-heading {
+      font-size: clamp(28px, 4vw, 42px); font-weight: 900;
+      letter-spacing: -1px; color: var(--text-1); line-height: 1.15;
+      margin-bottom: 24px;
+    }
+    .closing-body {
+      font-size: 16px; color: var(--text-2); line-height: 1.75;
+      margin-bottom: 16px;
+    }
+    .closing-cards {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 14px; margin-top: 40px;
+    }
+    .closing-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+    }
+    .closing-card-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--green-light); display: flex; align-items: center;
+      justify-content: center; margin-bottom: 12px;
+    }
+    .closing-card-title { font-size: 14px; font-weight: 700; color: var(--text-1); margin-bottom: 6px; }
+    .closing-card-body { font-size: 13px; color: var(--text-3); line-height: 1.5; }
+
+    .closing-cta { margin-top: 40px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: linear-gradient(135deg, var(--green), var(--green-dark));
+      color: white; font-size: 14px; font-weight: 600; padding: 10px 22px;
+      border-radius: 10px; text-decoration: none; border: none; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--text-2); font-size: 14px; font-weight: 500;
+      padding: 10px 22px; border-radius: 10px;
+      border: 1.5px solid var(--border); text-decoration: none;
+      transition: all 0.2s; background: white; cursor: pointer;
+    }
+    .btn-ghost:hover { border-color: var(--green); color: var(--green); }
+
+    .footer {
+      padding: 24px; text-align: center; border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--text-4);
+    }
+    .footer a { color: var(--green); text-decoration: none; }
+
+    /* ── Enter animations (IntersectionObserver driven) ──── */
+    .reveal {
+      opacity: 0; transform: translateY(20px);
+      transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    /* ── Mobile tweaks ──────────────────────────────────── */
+    @media (max-width: 700px) {
+      .sticky-section, .sticky-section.flipped {
+        display: block; grid-template-columns: unset;
+      }
+      .sticky-chart-col {
+        position: relative; height: auto; min-height: 260px;
+        border-right: none; border-bottom: 1px solid var(--border);
+      }
+      .sticky-text-col { padding: 40px 20px; }
+      .closing-cards { grid-template-columns: 1fr; }
+      .cover-stats { gap: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div id="progress-bar"></div>
+
+<!-- Branding -->
+<div class="reportr-bar">
+  Built with <strong>Reportr</strong>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 1 — COVER
+═══════════════════════════════════════════════════ -->
+<section class="cover-section" id="cover">
+  <div class="cover-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <div class="cover-eyebrow">Q4 2025 · Revenue Analysis</div>
+  <h1 class="cover-title">Revenue<br><span>in Focus</span></h1>
+  <p class="cover-sub">A data-driven narrative across regions, channels, and months — from our strongest quarter on record.</p>
+
+  <div class="cover-stats">
+    <div class="cover-stat">
+      <div class="cover-stat-num" id="anim-total">$0M</div>
+      <div class="cover-stat-label">Total Revenue</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-num" id="anim-yoy">+0%</div>
+      <div class="cover-stat-label">YoY Growth</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-num" id="anim-regions">0</div>
+      <div class="cover-stat-label">Regions</div>
+    </div>
+    <div class="cover-stat">
+      <div class="cover-stat-num" id="anim-deals">0K+</div>
+      <div class="cover-stat-label">Deals Closed</div>
+    </div>
+  </div>
+
+  <div class="cover-scroll-hint">
+    <div class="scroll-mouse"></div>
+    <span>Scroll to explore</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 2 — Q4 BY REGION (sticky left chart)
+═══════════════════════════════════════════════════ -->
+<section class="sticky-section" id="region-section" data-section="region">
+
+  <!-- Sticky chart column -->
+  <div class="sticky-chart-col">
+    <div class="chart-header">
+      <div class="chart-eyebrow">Revenue breakdown</div>
+      <div class="chart-title">Q4 by Region</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="chart-controls">
+      <div class="ctrl-row">
+        <label class="ctrl-label" for="year-sel">Year</label>
+        <select class="ctrl-input" id="year-sel" onchange="updateRegionChart()">
+          <option value="2023">2023</option>
+          <option value="2024">2024</option>
+          <option value="2025" selected>2025</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="chart-canvas-wrap" style="margin-top:12px;">
+      <canvas id="region-chart" height="200"></canvas>
+    </div>
+
+    <div class="chart-annotation" id="region-annotation">
+      All four regions hit Q4 targets. Total revenue: <strong>$15.1M</strong>.
+    </div>
+
+    <div class="chart-step-dots" id="region-dots"></div>
+  </div>
+
+  <!-- Scroll text column -->
+  <div class="sticky-text-col">
+
+    <div class="scroll-step" data-section="region" data-step="0">
+      <div class="step-num">Section 01</div>
+      <h2 class="step-heading">Strong gains across every region</h2>
+      <p class="step-body">Q4 2025 saw consistent outperformance across NAM, EMEA, APAC, and LATAM. All four regions hit or exceeded their targets — a first in company history.</p>
+      <p class="step-body">Total Q4 revenue landed at <strong>$15.1M</strong>, representing a 22% increase over Q4 2024.</p>
+    </div>
+
+    <div class="scroll-step" data-section="region" data-step="1">
+      <div class="step-num">APAC — Record Quarter</div>
+      <h2 class="step-heading">APAC breaks all records</h2>
+      <p class="step-body">APAC posted <strong>$5.8M in Q4 revenue</strong> — a 41% year-on-year increase and the region's best quarter ever. This was driven by two enterprise deals closed in late November.</p>
+      <div class="inline-stat">
+        <span class="inline-stat-num">+41%</span>
+        <span class="inline-stat-label">APAC YoY growth</span>
+      </div>
+    </div>
+
+    <div class="scroll-step" data-section="region" data-step="2">
+      <div class="step-num">EMEA — Contract Spike</div>
+      <h2 class="step-heading">A single deal moved EMEA's needle</h2>
+      <p class="step-body">EMEA's Q4 total of <strong>$3.1M</strong> includes a $2.1M contract renewal that closed in November. Strip that out and underlying growth was a more modest 9%.</p>
+      <p class="step-body">The renewal confirms our enterprise motion in EMEA — the team is now targeting three similar accounts for Q1.</p>
+      <span class="step-badge">⚠️ Renewal dependency — watch Q1</span>
+    </div>
+
+    <div class="scroll-step" data-section="region" data-step="3">
+      <div class="step-num">NAM — Steady Foundation</div>
+      <h2 class="step-heading">NAM: the reliable engine</h2>
+      <p class="step-body">NAM contributed <strong>$4.2M</strong> — an 8% increase YoY, steady and predictable. While less dramatic than APAC, this represents a healthy, compounding growth trajectory across a mature market.</p>
+      <p class="step-body">New business in NAM now accounts for 38% of bookings, up from 28% in Q3.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 3 — CALLOUT STAT
+═══════════════════════════════════════════════════ -->
+<section class="callout-section" id="callout">
+  <div class="callout-num reveal" id="callout-num">41%</div>
+  <div class="callout-label reveal reveal-delay-1">YoY growth in APAC</div>
+  <p class="callout-sub reveal reveal-delay-2">The biggest single-region gain in company history — driven by two enterprise deals and a new partnership channel.</p>
+  <div class="callout-chip reveal reveal-delay-3">🏆 Record quarter</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 4 — MONTHLY TREND (sticky right chart)
+═══════════════════════════════════════════════════ -->
+<section class="sticky-section flipped" id="trend-section" data-section="trend">
+
+  <!-- Text column (left because flipped) -->
+  <div class="sticky-text-col">
+
+    <div class="scroll-step" data-section="trend" data-step="0">
+      <div class="step-num">Section 02</div>
+      <h2 class="step-heading">October surge, then steady climb</h2>
+      <p class="step-body">The quarter opened with a strong October spike driven by two overlapping campaign launches. Use the controls to switch metric or adjust smoothing.</p>
+    </div>
+
+    <div class="scroll-step" data-section="trend" data-step="1">
+      <div class="step-num">October</div>
+      <h2 class="step-heading">Campaigns fired up the pipeline</h2>
+      <p class="step-body">Week one of October saw a <strong>+18% surge</strong> in new pipeline — the direct result of the APAC-targeted outbound campaign and a product launch webinar.</p>
+      <p class="step-body">Revenue lagged slightly as deals took 3–4 weeks to close, appearing in the weekly tally from Oct 15 onward.</p>
+    </div>
+
+    <div class="scroll-step" data-section="trend" data-step="2">
+      <div class="step-num">November</div>
+      <h2 class="step-heading">Plateau — but healthy</h2>
+      <p class="step-body">November saw revenue stabilise after the promotional period ended. This is normal — a short plateau following a campaign is healthy and reduces churn risk.</p>
+      <p class="step-body">The EMEA renewal closed Nov 8, appearing as a spike in week two. Underlying new business held flat at ~$340K per week.</p>
+    </div>
+
+    <div class="scroll-step" data-section="trend" data-step="3">
+      <div class="step-num">December</div>
+      <h2 class="step-heading">Strong close — beat forecast</h2>
+      <p class="step-body">December closed at <strong>$5.2M</strong> — 6% ahead of forecast. The final two weeks showed accelerating deal closures as buyers pushed to spend remaining budget before year-end.</p>
+      <span class="step-badge" style="margin-top:8px;">✓ Beat forecast by 6%</span>
+    </div>
+
+  </div>
+
+  <!-- Sticky chart column (right) -->
+  <div class="sticky-chart-col">
+    <div class="chart-header">
+      <div class="chart-eyebrow">Weekly performance</div>
+      <div class="chart-title" id="trend-title">Monthly Revenue</div>
+    </div>
+
+    <!-- Controls -->
+    <div class="chart-controls">
+      <div class="ctrl-row">
+        <label class="ctrl-label" for="metric-sel">Metric</label>
+        <select class="ctrl-input" id="metric-sel" onchange="updateTrendChart()">
+          <option value="revenue" selected>Revenue ($M)</option>
+          <option value="orders">Orders</option>
+          <option value="aov">Avg Order Value</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <label class="ctrl-label" for="smooth-sl">Smoothing</label>
+        <input type="range" class="ctrl-input" id="smooth-sl" min="0" max="8" value="3"
+               oninput="updateTrendChart()" style="flex:1;">
+        <span id="smooth-val" style="font-size:11px;color:var(--text-3);min-width:16px;">3</span>
+      </div>
+    </div>
+
+    <div class="chart-canvas-wrap" style="margin-top:12px;">
+      <canvas id="trend-chart" height="200"></canvas>
+    </div>
+
+    <div class="chart-annotation" id="trend-annotation">
+      Scroll through the steps to explore each month's performance.
+    </div>
+
+    <div class="chart-step-dots" id="trend-dots"></div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 5 — CLOSING
+═══════════════════════════════════════════════════ -->
+<section class="closing-section">
+  <div class="closing-inner">
+    <div class="closing-label reveal">Looking ahead</div>
+    <h2 class="closing-heading reveal reveal-delay-1">What this means for Q1 2026</h2>
+    <p class="closing-body reveal reveal-delay-2">The Q4 momentum gives us a strong pipeline heading into 2026. APAC will be the primary growth target, with EMEA as a high-potential secondary market bolstered by the November renewal relationship.</p>
+    <p class="closing-body reveal reveal-delay-2">Product mix shifts toward higher-margin tiers — expect AOV to rise even if volume growth moderates. The enterprise motion is working; we should double down.</p>
+
+    <div class="closing-cards">
+      <div class="closing-card reveal reveal-delay-1">
+        <div class="closing-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        </div>
+        <div class="closing-card-title">APAC expansion</div>
+        <div class="closing-card-body">Target 3 enterprise deals in AU and JP. Pipeline already $4.8M — highest ever entering Q1.</div>
+      </div>
+      <div class="closing-card reveal reveal-delay-2">
+        <div class="closing-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div class="closing-card-title">EMEA follow-through</div>
+        <div class="closing-card-body">Three accounts identified from the November renewal network. First meetings scheduled for Feb.</div>
+      </div>
+      <div class="closing-card reveal reveal-delay-3">
+        <div class="closing-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="closing-card-title">Product mix shift</div>
+        <div class="closing-card-body">Enterprise tier now 42% of ARR, up from 31%. Aim for 55% by end of Q2 2026.</div>
+      </div>
+      <div class="closing-card reveal reveal-delay-3">
+        <div class="closing-card-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="closing-card-title">Team investment</div>
+        <div class="closing-card-body">Two AE hires approved for APAC. Onboarding planned for March to capture Q2 pipeline.</div>
+      </div>
+    </div>
+
+    <div class="closing-cta reveal reveal-delay-2">
+      <a href="#" class="btn-primary">View live dashboard →</a>
+      <a href="#" class="btn-ghost">Download full report</a>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  Built with <a href="#">Reportr</a> · Q4 2025 data is illustrative ·
+  <a href="scrollyteller-builder.html">← Back to builder</a>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+/* ── DATA ──────────────────────────────────────────────────── */
+const REGION_DATA = {
+  2023: [3.1, 2.4, 3.8, 1.3],
+  2024: [3.8, 2.8, 4.1, 1.6],
+  2025: [4.2, 3.1, 5.8, 1.9],
+};
+
+const TREND_DATA = {
+  labels: ['Oct 1','Oct 8','Oct 15','Oct 22','Nov 1','Nov 8','Nov 15','Nov 22','Dec 1','Dec 8','Dec 15','Dec 22'],
+  revenue: [2.8, 3.4, 3.1, 4.2, 3.8, 4.9, 3.6, 3.7, 4.1, 4.4, 4.6, 5.2],
+  orders:  [140, 172, 155, 210, 189, 245, 180, 185, 205, 220, 230, 260],
+  aov:     [2000, 1977, 2000, 2000, 2011, 2000, 2000, 2000, 2000, 2000, 2000, 2000],
+};
+
+const REGION_STEPS = [
+  { highlight: [0,1,2,3], annotation: 'All four regions hit Q4 targets. Total revenue: <strong>$15.1M</strong>.' },
+  { highlight: [2],        annotation: '🏆 APAC record: <strong>$5.8M</strong> — up 41% YoY. Best quarter ever.' },
+  { highlight: [1],        annotation: '⚠️ EMEA: $2.1M contract renewal boosted total to <strong>$3.1M</strong>. Underlying +9%.' },
+  { highlight: [0],        annotation: '📊 NAM: Steady <strong>+8% YoY</strong>. New biz mix improving to 38% of bookings.' },
+];
+
+const TREND_STEPS = [
+  { highlight: null,        annotation: 'Scroll through the steps to explore each month\'s performance.' },
+  { highlight: [0,1,2,3],  annotation: '📣 Oct campaign spike: week-one pipeline <strong>+18%</strong>. Deals closed from Oct 15.' },
+  { highlight: [4,5,6,7],  annotation: '📈 Nov plateau: healthy stabilisation. EMEA renewal spiked week 2.' },
+  { highlight: [8,9,10,11],annotation: '✓ Dec close: <strong>$5.2M</strong> — beat forecast by <strong>6%</strong>. Year-end budget flush.' },
+];
+
+/* ── PALETTE ───────────────────────────────────────────────── */
+const GREEN  = '#16A34A';
+const BLUE   = '#3B82F6';
+const MUTED  = '#E2E8F0';
+
+/* ── CHARTS ────────────────────────────────────────────────── */
+let regionChart, trendChart;
+let currentRegionStep = 0;
+let currentTrendStep  = 0;
+
+function buildRegionChart() {
+  const ctx = document.getElementById('region-chart').getContext('2d');
+  regionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['NAM', 'EMEA', 'APAC', 'LATAM'],
+      datasets: [{
+        data: REGION_DATA[2025],
+        backgroundColor: [GREEN, GREEN, GREEN, GREEN],
+        borderRadius: 8, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` $${ctx.parsed.y}M` }
+        }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 12, weight: '600' }, color: '#64748B' } },
+        y: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 11 }, color: '#94A3B8', callback: v => `$${v}M` }, beginAtZero: true, max: 7 }
+      }
+    }
+  });
+  buildRegionDots();
+}
+
+function buildRegionDots() {
+  const container = document.getElementById('region-dots');
+  container.innerHTML = REGION_STEPS.map((_, i) => `
+    <div class="chart-step-dot${i === currentRegionStep ? ' active' : ''}"
+         onclick="jumpRegionStep(${i})" title="Step ${i+1}"></div>
+  `).join('') + `<span class="chart-step-dot-label">${getStepMoniker('region', currentRegionStep)}</span>`;
+}
+
+function setRegionStep(step) {
+  if (step === currentRegionStep) return;
+  currentRegionStep = step;
+
+  const s = REGION_STEPS[step];
+  const year = parseInt(document.getElementById('year-sel').value);
+  const data = REGION_DATA[year] || REGION_DATA[2025];
+
+  regionChart.data.datasets[0].backgroundColor = data.map((_, i) =>
+    s.highlight.includes(i) ? GREEN : MUTED
+  );
+  regionChart.data.datasets[0].data = data;
+  regionChart.update();
+
+  document.getElementById('region-annotation').innerHTML = s.annotation;
+  buildRegionDots();
+}
+
+function jumpRegionStep(step) {
+  // Scroll the page to the corresponding scroll-step element
+  const stepEl = document.querySelector(`[data-section="region"][data-step="${step}"]`);
+  if (stepEl) stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateRegionChart() {
+  const year = parseInt(document.getElementById('year-sel').value);
+  const data = REGION_DATA[year] || REGION_DATA[2025];
+  regionChart.data.datasets[0].data = data;
+  regionChart.update();
+}
+
+function buildTrendChart() {
+  const ctx = document.getElementById('trend-chart').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: TREND_DATA.labels,
+      datasets: [{
+        data: TREND_DATA.revenue,
+        borderColor: BLUE, borderWidth: 2.5,
+        backgroundColor: 'rgba(59,130,246,0.08)',
+        fill: true, tension: 0.4,
+        pointRadius: 5, pointBorderWidth: 2,
+        pointBackgroundColor: TREND_DATA.labels.map(() => 'white'),
+        pointBorderColor: BLUE,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 500, easing: 'easeInOutQuart' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: { label: ctx => ` ${formatTrendVal(ctx.parsed.y)}` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, color: '#94A3B8', maxTicksLimit: 6 }
+        },
+        y: {
+          grid: { color: '#F1F5F9' },
+          ticks: { font: { size: 10 }, color: '#94A3B8', callback: v => formatTrendVal(v) },
+          beginAtZero: false,
+        }
+      }
+    }
+  });
+  buildTrendDots();
+}
+
+function formatTrendVal(v) {
+  const metric = document.getElementById('metric-sel')?.value || 'revenue';
+  if (metric === 'revenue') return `$${v}M`;
+  if (metric === 'orders')  return v;
+  if (metric === 'aov')     return `$${v.toLocaleString()}`;
+  return v;
+}
+
+function buildTrendDots() {
+  const container = document.getElementById('trend-dots');
+  container.innerHTML = TREND_STEPS.map((_, i) => `
+    <div class="chart-step-dot${i === currentTrendStep ? ' active' : ''}"
+         onclick="jumpTrendStep(${i})" title="Step ${i+1}"></div>
+  `).join('') + `<span class="chart-step-dot-label">${getStepMoniker('trend', currentTrendStep)}</span>`;
+}
+
+function setTrendStep(step) {
+  if (step === currentTrendStep) return;
+  currentTrendStep = step;
+
+  const s = TREND_STEPS[step];
+  const metric = document.getElementById('metric-sel').value;
+  const rawData = TREND_DATA[metric];
+  const smoothed = applySmoothing(rawData, parseInt(document.getElementById('smooth-sl').value));
+
+  trendChart.data.datasets[0].data = smoothed;
+  trendChart.data.datasets[0].pointRadius = smoothed.map((_, i) =>
+    !s.highlight || s.highlight.includes(i) ? 6 : 3
+  );
+  trendChart.data.datasets[0].pointBackgroundColor = smoothed.map((_, i) =>
+    s.highlight && s.highlight.includes(i) ? BLUE : 'white'
+  );
+  trendChart.update();
+
+  document.getElementById('trend-annotation').innerHTML = TREND_STEPS[step].annotation;
+  buildTrendDots();
+}
+
+function jumpTrendStep(step) {
+  const stepEl = document.querySelector(`[data-section="trend"][data-step="${step}"]`);
+  if (stepEl) stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateTrendChart() {
+  const metric  = document.getElementById('metric-sel').value;
+  const smooth  = parseInt(document.getElementById('smooth-sl').value);
+  const rawData = TREND_DATA[metric];
+  const smoothed = applySmoothing(rawData, smooth);
+  document.getElementById('smooth-val').textContent = smooth;
+  document.getElementById('trend-title').textContent =
+    { revenue: 'Monthly Revenue ($M)', orders: 'Weekly Orders', aov: 'Avg. Order Value ($)' }[metric] || 'Weekly Revenue';
+  trendChart.data.datasets[0].data = smoothed;
+  trendChart.update();
+}
+
+function applySmoothing(data, windowSize) {
+  if (windowSize <= 1) return [...data];
+  return data.map((_, i) => {
+    const start = Math.max(0, i - Math.floor(windowSize / 2));
+    const end   = Math.min(data.length - 1, i + Math.floor(windowSize / 2));
+    const slice = data.slice(start, end + 1);
+    return parseFloat((slice.reduce((a, b) => a + b, 0) / slice.length).toFixed(2));
+  });
+}
+
+function getStepMoniker(section, step) {
+  if (section === 'region') return ['All regions', 'APAC', 'EMEA', 'NAM'][step] || '';
+  if (section === 'trend')  return ['Overview', 'October', 'November', 'December'][step] || '';
+  return '';
+}
+
+/* ── SCROLL OBSERVER ──────────────────────────────────────── */
+function initScrollObserver() {
+  const stepEls = document.querySelectorAll('.scroll-step');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+        entry.target.classList.add('active');
+        const section = entry.target.dataset.section;
+        const step    = parseInt(entry.target.dataset.step);
+        if (section === 'region') setRegionStep(step);
+        if (section === 'trend')  setTrendStep(step);
+      } else {
+        entry.target.classList.remove('active');
+      }
+    });
+  }, { threshold: 0.5 });
+
+  stepEls.forEach(el => observer.observe(el));
+}
+
+/* ── REVEAL OBSERVER ─────────────────────────────────────── */
+function initRevealObserver() {
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer  = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.2 });
+  revealEls.forEach(el => observer.observe(el));
+}
+
+/* ── PROGRESS BAR ─────────────────────────────────────────── */
+function initProgressBar() {
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    const progress  = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+    document.getElementById('progress-bar').style.width = `${progress}%`;
+  }, { passive: true });
+}
+
+/* ── NUMBER COUNTER ANIMATION ────────────────────────────── */
+function animateCounters() {
+  const counters = [
+    { el: 'anim-total',   from: 0, to: 15.1, suffix: 'M', prefix: '$', decimals: 1 },
+    { el: 'anim-yoy',     from: 0, to: 22,   suffix: '%', prefix: '+', decimals: 0 },
+    { el: 'anim-regions', from: 0, to: 4,    suffix: '',  prefix: '',  decimals: 0 },
+    { el: 'anim-deals',   from: 0, to: 12.4, suffix: 'K+',prefix: '', decimals: 0 },
+  ];
+  counters.forEach(c => {
+    const el = document.getElementById(c.el);
+    if (!el) return;
+    let start = null;
+    const duration = 1800;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const progress = Math.min((ts - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      const val = c.from + (c.to - c.from) * ease;
+      el.textContent = `${c.prefix}${c.decimals > 0 ? val.toFixed(c.decimals) : Math.round(val)}${c.suffix}`;
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/* ── INIT ─────────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  buildRegionChart();
+  buildTrendChart();
+  initScrollObserver();
+  initRevealObserver();
+  initProgressBar();
+
+  // Trigger counter animation after a short delay (cover is visible on load)
+  setTimeout(animateCounters, 400);
+
+  // Set first step active on each section on load
+  document.querySelectorAll('[data-step="0"]').forEach(el => el.classList.add('active'));
+});
+</script>
+</body>
+</html>

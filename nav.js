@@ -10,7 +10,8 @@ const NAV_ITEMS = [
       { id: 'connections',    label: 'Connections',    href: 'index.html',               icon: 'database',        badge: null },
       { id: 'datasets',       label: 'Datasets',       href: 'dataset-builder.html',     icon: 'table-2',         badge: null },
       { id: 'visualisations', label: 'Visualisations', href: 'visualisation-builder.html', icon: 'bar-chart-2',   badge: null },
-      { id: 'dashboards',     label: 'Dashboards',     href: 'dashboard-builder.html',   icon: 'layout-dashboard',badge: null },
+      { id: 'dashboards',      label: 'Dashboards',     href: 'dashboard-builder.html',      icon: 'layout-dashboard', badge: null },
+      { id: 'scrollytellers',  label: 'Scrollytellers', href: 'scrollyteller-builder.html',  icon: 'scroll-text',      badge: 'NEW' },
     ]
   },
   {

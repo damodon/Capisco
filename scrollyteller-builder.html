@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrollyteller Builder — Reportr</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ═══════════════════════════════════════════════
+       BUILDER SHELL
+    ═══════════════════════════════════════════════ */
+    body { overflow: hidden; }
+    .builder-app { display: flex; height: 100vh; overflow: hidden; }
+
+    /* ── Left: Section List ─────────────────────── */
+    .section-list {
+      width: 210px; flex-shrink: 0;
+      background: #F8FAFC; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .section-list-hd {
+      padding: 14px 14px 10px;
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .section-list-body { flex: 1; overflow-y: auto; padding: 8px; }
+    .section-card {
+      border-radius: var(--r-md); padding: 10px 10px 8px;
+      margin-bottom: 4px; cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all var(--t-fast); background: white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .section-card:hover { border-color: var(--border); }
+    .section-card.active { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 2px rgba(22,163,74,0.12); }
+    .section-thumb {
+      height: 52px; border-radius: 5px; margin-bottom: 7px;
+      overflow: hidden; position: relative;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .section-card-label { font-size: 11.5px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+    .section-card.active .section-card-label { color: var(--accent-text); }
+    .section-card-meta { font-size: 10.5px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
+    .section-card-meta svg { width: 10px; height: 10px; }
+    .add-section-btn {
+      margin: 8px; padding: 8px;
+      border: 1.5px dashed var(--border); border-radius: var(--r-md);
+      background: none; cursor: pointer; font-size: 12.5px; font-weight: 500;
+      color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 6px;
+      transition: all var(--t-fast);
+    }
+    .add-section-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .add-section-btn svg { width: 14px; height: 14px; }
+
+    /* ── Center: Canvas ─────────────────────────── */
+    .canvas-wrap {
+      flex: 1; display: flex; flex-direction: column;
+      background: #ECEFF4; overflow: hidden; min-width: 0;
+    }
+    .canvas-topbar {
+      background: white; border-bottom: 1px solid var(--border);
+      padding: 0 16px; height: 46px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+    }
+    .canvas-topbar-title {
+      font-size: 13.5px; font-weight: 600; color: var(--text-1); flex: 1;
+    }
+    .mechanic-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: var(--r-full);
+      font-size: 11px; font-weight: 600;
+      cursor: pointer;
+    }
+    .mechanic-pill.step { background: var(--accent-light); color: var(--accent-text); }
+    .mechanic-pill.continuous { background: var(--blue-ui-light); color: var(--blue-ui-text); }
+    .mechanic-pill svg { width: 11px; height: 11px; }
+
+    .canvas-viewport {
+      flex: 1; overflow: auto; padding: 20px;
+      display: flex; align-items: flex-start; justify-content: center;
+    }
+    .canvas-frame {
+      background: white; border-radius: var(--r-xl);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05);
+      overflow: hidden; width: 100%; max-width: 860px;
+    }
+
+    /* Canvas section renderings */
+    .canvas-cover {
+      height: 340px; background: linear-gradient(135deg, #0D1117 0%, #1A2332 60%, #16A34A22 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 12px; text-align: center; padding: 40px; position: relative;
+    }
+    .canvas-cover-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+    .canvas-cover-title { font-size: 32px; font-weight: 800; color: white; line-height: 1.2; letter-spacing: -1px; }
+    .canvas-cover-sub { font-size: 15px; color: rgba(255,255,255,0.55); max-width: 480px; line-height: 1.5; }
+    .canvas-cover-scroll { position: absolute; bottom: 24px; display: flex; flex-direction: column; align-items: center; gap: 4px; opacity: 0.4; }
+    .canvas-cover-scroll span { font-size: 10px; color: white; letter-spacing: 1px; text-transform: uppercase; }
+    .scroll-arrow { width: 18px; height: 18px; color: white; animation: bob 1.5s ease-in-out infinite; }
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+
+    /* Split layout */
+    .canvas-split {
+      display: grid; min-height: 360px;
+    }
+    .canvas-split.layout-left  { grid-template-columns: 45% 55%; }
+    .canvas-split.layout-right { grid-template-columns: 55% 45%; }
+    .canvas-split.layout-dual  { grid-template-columns: 1fr 1fr; }
+
+    .canvas-sticky-area {
+      background: #F8FAFC; border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; align-items: stretch;
+      padding: 16px; gap: 8px; min-height: 360px; position: relative;
+    }
+    .canvas-split.layout-right .canvas-sticky-area { border-right: none; border-left: 1px solid var(--border); }
+    .canvas-sticky-label {
+      font-size: 10px; font-weight: 700; color: var(--text-4);
+      text-transform: uppercase; letter-spacing: 1px;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .canvas-sticky-label svg { width: 11px; height: 11px; }
+    .canvas-chart-area { flex: 1; position: relative; min-height: 200px; }
+    .step-indicator-bar {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 0 0;
+    }
+    .step-ind-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--border); transition: background var(--t-fast);
+      cursor: pointer;
+    }
+    .step-ind-dot.active { background: var(--accent); }
+
+    .canvas-scroll-area {
+      padding: 16px 20px; display: flex; flex-direction: column;
+      gap: 0; overflow-y: auto; max-height: 360px;
+    }
+    .canvas-block {
+      border: 1.5px solid transparent; border-radius: var(--r-md);
+      padding: 10px 12px; cursor: pointer; transition: all var(--t-fast);
+      position: relative;
+    }
+    .canvas-block:hover { border-color: var(--border); background: #FAFAFA; }
+    .canvas-block.selected { border-color: var(--accent); background: var(--accent-light); }
+    .canvas-block-text { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+    .canvas-block-text.heading { font-size: 17px; font-weight: 700; color: var(--text-1); }
+    .canvas-block-text.callout { font-size: 22px; font-weight: 800; color: var(--text-1); }
+    .canvas-block-type-chip {
+      position: absolute; top: 6px; right: 6px;
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 2px 6px; border-radius: var(--r-sm);
+      opacity: 0; transition: opacity var(--t-fast);
+      background: var(--surface-3); color: var(--text-3);
+    }
+    .canvas-block:hover .canvas-block-type-chip,
+    .canvas-block.selected .canvas-block-type-chip { opacity: 1; }
+
+    .step-trigger-line {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; cursor: pointer;
+    }
+    .step-trigger-line .stl-line { flex: 1; height: 1.5px; background: var(--accent-mid); }
+    .step-trigger-line .stl-badge {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.3px;
+      padding: 2px 8px; border-radius: var(--r-full);
+      background: var(--accent-light); color: var(--accent-text);
+      border: 1px solid var(--accent-mid); white-space: nowrap;
+      transition: all var(--t-fast);
+    }
+    .step-trigger-line:hover .stl-badge { background: var(--accent); color: white; border-color: var(--accent); }
+    .step-trigger-line.active-step .stl-line { background: var(--accent); }
+    .step-trigger-line.active-step .stl-badge { background: var(--accent); color: white; border-color: var(--accent); }
+
+    .add-block-row {
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px 0;
+    }
+    .add-block-btn {
+      background: none; border: none; cursor: pointer;
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1.5px dashed var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-4); transition: all var(--t-fast);
+    }
+    .add-block-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .add-block-btn svg { width: 12px; height: 12px; }
+
+    /* Inline control block */
+    .canvas-control-block {
+      background: #F0FDF4; border: 1.5px solid var(--accent-mid);
+      border-radius: var(--r-md); padding: 10px 12px;
+      margin: 4px 0;
+    }
+    .ccb-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent-text); margin-bottom: 6px; display: flex; align-items: center; gap: 5px; }
+    .ccb-label svg { width: 11px; height: 11px; }
+    .ccb-control { display: flex; align-items: center; gap: 8px; }
+    .ccb-control-name { font-size: 12.5px; font-weight: 500; color: var(--text-1); }
+    .ccb-control-type { font-size: 11px; color: var(--text-3); }
+    .ccb-slider { flex: 1; accent-color: var(--accent); }
+
+    /* Callout canvas */
+    .canvas-callout {
+      min-height: 180px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 40px; text-align: center; gap: 8px;
+    }
+    .canvas-callout-num { font-size: 64px; font-weight: 900; color: var(--accent); letter-spacing: -3px; line-height: 1; }
+    .canvas-callout-label { font-size: 20px; font-weight: 700; color: var(--text-1); }
+    .canvas-callout-sub { font-size: 14px; color: var(--text-3); }
+
+    /* Full-bleed canvas */
+    .canvas-fullbleed {
+      height: 240px; position: relative; overflow: hidden;
+    }
+    .canvas-fullbleed-bg {
+      position: absolute; inset: 0; background: linear-gradient(135deg, #0D1117, #1e3a5f);
+    }
+    .canvas-fullbleed-chart { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .canvas-fullbleed-overlay {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px; padding: 24px;
+    }
+
+    /* Text-only canvas */
+    .canvas-text-only { padding: 24px 32px; }
+
+    /* ── Step Timeline ───────────────────────────── */
+    .step-timeline {
+      background: white; border-top: 1px solid var(--border);
+      padding: 12px 16px; flex-shrink: 0;
+    }
+    .step-timeline-hd {
+      font-size: 10px; font-weight: 700; color: var(--text-4);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 6px;
+    }
+    .step-timeline-hd svg { width: 11px; height: 11px; }
+    .step-timeline-track {
+      display: flex; align-items: flex-start; gap: 0;
+    }
+    .step-node {
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      flex: 1; cursor: pointer; position: relative;
+    }
+    .step-node::after {
+      content: ''; position: absolute; top: 12px; left: calc(50% + 12px);
+      right: 0; height: 2px; background: var(--border);
+    }
+    .step-node:last-child::after { display: none; }
+    .step-node.active::after { background: var(--accent-mid); }
+    .step-dot {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--surface-3); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      transition: all var(--t-fast); position: relative; z-index: 1;
+    }
+    .step-node.active .step-dot { background: var(--accent); border-color: var(--accent); color: white; box-shadow: 0 0 0 3px rgba(22,163,74,0.2); }
+    .step-node:hover:not(.active) .step-dot { border-color: var(--accent); color: var(--accent); }
+    .step-label-text { font-size: 10px; color: var(--text-3); text-align: center; max-width: 80px; line-height: 1.3; }
+    .step-node.active .step-label-text { color: var(--accent-text); font-weight: 600; }
+    .step-node.add-step { flex: 0; }
+    .step-node.add-step::after { display: none; }
+    .add-step-btn {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px dashed var(--border); background: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-4); transition: all var(--t-fast);
+    }
+    .add-step-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .add-step-btn svg { width: 12px; height: 12px; }
+
+    /* ── Right: Inspector ───────────────────────── */
+    .inspector {
+      width: 272px; flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      background: white; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .inspector-hd {
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      display: flex; align-items: center; gap: 7px;
+      background: #F8FAFC; flex-shrink: 0;
+    }
+    .inspector-hd svg { width: 12px; height: 12px; }
+    .inspector-tabs {
+      display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .inspector-tab {
+      flex: 1; padding: 8px; font-size: 12px; font-weight: 500;
+      color: var(--text-3); cursor: pointer; text-align: center;
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: all var(--t-fast); background: none; border-top: none; border-left: none; border-right: none;
+    }
+    .inspector-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .inspector-body { flex: 1; overflow-y: auto; }
+    .inspector-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .inspector-section-title {
+      font-size: 10.5px; font-weight: 700; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px;
+    }
+
+    /* Layout picker */
+    .layout-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    }
+    .layout-opt {
+      border: 1.5px solid var(--border); border-radius: var(--r-md);
+      padding: 8px 6px 6px; cursor: pointer; text-align: center;
+      transition: all var(--t-fast); background: white;
+    }
+    .layout-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+    .layout-opt.selected { border-color: var(--accent); background: var(--accent-light); box-shadow: 0 0 0 2px rgba(22,163,74,0.15); }
+    .layout-opt-thumb { width: 100%; height: 32px; border-radius: 3px; margin-bottom: 5px; overflow: hidden; position: relative; background: #EFF1F5; }
+    .layout-opt-label { font-size: 10.5px; font-weight: 600; color: var(--text-2); }
+    .layout-opt.selected .layout-opt-label { color: var(--accent-text); }
+
+    /* SVG layout thumbnails */
+    .lt-svg { width: 100%; height: 100%; }
+
+    /* Mechanic toggle */
+    .mechanic-toggle-wrap { display: flex; gap: 6px; }
+    .mechanic-btn {
+      flex: 1; padding: 7px 4px; border: 1.5px solid var(--border);
+      border-radius: var(--r-md); background: white; cursor: pointer;
+      font-size: 11.5px; font-weight: 500; color: var(--text-3);
+      text-align: center; transition: all var(--t-fast);
+    }
+    .mechanic-btn.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent-text); }
+
+    /* Step inspector */
+    .step-state-section { display: flex; flex-direction: column; gap: 8px; }
+    .step-filter-row { display: flex; align-items: center; gap: 6px; }
+    .step-highlight-chips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+    .highlight-chip {
+      padding: 3px 10px; border-radius: var(--r-full); font-size: 11px; font-weight: 600;
+      border: 1.5px solid var(--border); cursor: pointer; transition: all var(--t-fast);
+      background: white; color: var(--text-2);
+    }
+    .highlight-chip.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .annotation-input {
+      width: 100%; padding: 7px 10px; font-size: 12.5px;
+      border: 1.5px solid var(--border); border-radius: var(--r-md);
+      outline: none; transition: border-color var(--t-fast); resize: none;
+    }
+    .annotation-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+
+    /* Preview overlay */
+    .preview-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: white; display: none; flex-direction: column;
+    }
+    .preview-overlay.open { display: flex; }
+    .preview-topbar {
+      background: #0D1117; color: white;
+      padding: 0 20px; height: 44px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .preview-title { font-size: 14px; font-weight: 600; flex: 1; opacity: 0.9; }
+    .preview-device-btns { display: flex; gap: 4px; }
+    .preview-device-btn {
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--r-sm); padding: 4px 10px; color: rgba(255,255,255,0.7);
+      cursor: pointer; font-size: 12px; transition: all var(--t-fast);
+    }
+    .preview-device-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .preview-frame {
+      flex: 1; overflow: hidden; display: flex; justify-content: center;
+      background: #ECEFF4;
+    }
+    .preview-iframe-wrap {
+      background: white; box-shadow: 0 4px 32px rgba(0,0,0,0.15);
+      transition: all 0.3s var(--ease); overflow: hidden;
+      width: 100%; max-width: 100%;
+    }
+    .preview-iframe-wrap.mobile { max-width: 390px; margin-top: 20px; border-radius: 20px; border: 8px solid #1A1A1A; }
+    .preview-iframe-wrap iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* Add section modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(13,15,25,0.5); backdrop-filter: blur(3px);
+      display: none; align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: white; border-radius: var(--r-xl);
+      padding: 28px; max-width: 560px; width: 90%;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.96);
+      animation: modalIn 0.2s var(--ease) forwards;
+    }
+    @keyframes modalIn { to { transform: scale(1); } }
+    .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+    .modal-sub { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
+    .modal-layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .modal-layout-opt {
+      border: 1.5px solid var(--border); border-radius: var(--r-lg);
+      padding: 14px 10px 10px; cursor: pointer; text-align: center;
+      transition: all var(--t-fast);
+    }
+    .modal-layout-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+    .modal-layout-thumb { height: 60px; border-radius: 6px; background: #EFF1F5; margin-bottom: 8px; overflow: hidden; }
+    .modal-layout-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
+    .modal-layout-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .modal-footer { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+  </style>
+</head>
+<body>
+<div class="builder-app">
+  <!-- ── 1. Sidebar ─────────────────────────────────────── -->
+  <div id="sidebar"></div>
+
+  <!-- ── 2. Main area (section list + canvas + inspector) ─ -->
+  <div style="flex:1;display:flex;min-width:0;overflow:hidden;">
+
+    <!-- Section List -->
+    <div class="section-list">
+      <div class="section-list-hd">
+        <span>Sections</span>
+        <span id="section-count" style="font-size:11px;font-weight:500;color:var(--text-3);background:var(--surface-3);padding:1px 7px;border-radius:var(--r-full);">5</span>
+      </div>
+      <div class="section-list-body" id="section-list-body">
+        <!-- rendered by JS -->
+      </div>
+      <button class="add-section-btn" onclick="openAddSectionModal()">
+        <i data-lucide="plus"></i>
+        Add Section
+      </button>
+    </div>
+
+    <!-- Canvas -->
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="canvas-topbar">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="canvas-topbar-title" id="canvas-section-label">Section 2 — Q4 by Region</div>
+          <span class="mechanic-pill step" id="mechanic-pill" onclick="toggleMechanic()">
+            <i data-lucide="footprints"></i>
+            Step-based
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+          <button class="btn btn-ghost btn-sm">
+            <i data-lucide="smartphone"></i> Mobile
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openPreview()">
+            <i data-lucide="play-circle"></i> Preview
+          </button>
+          <button class="btn btn-primary btn-sm" style="background:linear-gradient(135deg,var(--blue-ui),var(--blue-ui-dark));">
+            <i data-lucide="upload-cloud"></i> Publish
+          </button>
+        </div>
+      </div>
+
+      <div class="canvas-viewport">
+        <div class="canvas-frame">
+          <div id="canvas-content">
+            <!-- rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Step Timeline -->
+      <div class="step-timeline" id="step-timeline">
+        <div class="step-timeline-hd">
+          <i data-lucide="milestone"></i>
+          Scroll Steps
+        </div>
+        <div class="step-timeline-track" id="step-track">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector -->
+    <div class="inspector">
+      <div class="inspector-hd" id="inspector-hd">
+        <i data-lucide="settings-2"></i>
+        Section Settings
+      </div>
+      <div class="inspector-tabs" id="inspector-tabs" style="display:none;">
+        <button class="inspector-tab active" onclick="setInspectorTab('content')" id="itab-content">Content</button>
+        <button class="inspector-tab" onclick="setInspectorTab('style')" id="itab-style">Style</button>
+      </div>
+      <div class="inspector-body" id="inspector-body">
+        <!-- rendered by JS -->
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── Preview Overlay ──────────────────────────────────── -->
+<div class="preview-overlay" id="preview-overlay">
+  <div class="preview-topbar">
+    <button class="btn btn-icon" style="color:white;" onclick="closePreview()">
+      <i data-lucide="x"></i>
+    </button>
+    <div class="preview-title">Q4 2025 — Revenue in Focus · Preview</div>
+    <div class="preview-device-btns">
+      <button class="preview-device-btn active" onclick="setPreviewDevice('desktop', this)">Desktop</button>
+      <button class="preview-device-btn" onclick="setPreviewDevice('mobile', this)">Mobile</button>
+    </div>
+    <a href="scrollyteller-example.html" target="_blank" class="btn btn-secondary btn-sm" style="margin-left:8px;">
+      <i data-lucide="external-link"></i> Open full
+    </a>
+  </div>
+  <div class="preview-frame">
+    <div class="preview-iframe-wrap" id="preview-iframe-wrap">
+      <iframe src="scrollyteller-example.html" id="preview-iframe"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ── Add Section Modal ─────────────────────────────────── -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add a section</div>
+    <div class="modal-sub">Choose a layout for the new section. You can change this later.</div>
+    <div class="modal-layout-grid" id="modal-layout-grid">
+      <!-- rendered by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeAddSectionModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="nav.js"></script>
+<script src="scrollyteller-builder.js"></script>
+</body>
+</html>
