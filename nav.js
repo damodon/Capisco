@@ -36,7 +36,7 @@ function buildSidebar(activeId) {
   let html = `
     <aside class="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-mark">R</div>
+        <img src="logo.png" class="logo-img" alt="Reportr">
         <div>
           <div class="logo-text">Reportr</div>
           <div class="logo-sub">Analytics Platform</div>

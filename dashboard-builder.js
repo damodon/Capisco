@@ -4,7 +4,7 @@
    ============================================================ */
 
 /* ── PALETTE ──────────────────────────────────────────────── */
-const P = ['#5B6CF9','#06B6D4','#10B981','#F59E0B','#EF4444','#8B5CF6'];
+const P = ['#16A34A','#06B6D4','#3B82F6','#F59E0B','#EF4444','#8B5CF6'];
 
 /* ── DASHBOARD STATE ───────────────────────────────────────── */
 let dashboard = {
@@ -311,7 +311,7 @@ function buildPagePanel() {
     ${styleSection('Theme', `
       <div class="form-group">
         <label class="form-label">Accent Colour</label>
-        ${colorControl('theme-accent','#5B6CF9','applyThemeAccent')}
+        ${colorControl('theme-accent','#16A34A','applyThemeAccent')}
       </div>
       <div class="form-group">
         <label class="form-label" style="margin-top:4px;">Default card background</label>
@@ -741,7 +741,7 @@ function renderLeftPanel() {
       <div class="left-section-title">Global Theme</div>
       <div class="form-group">
         <label class="form-label" style="font-size:12px;">Accent</label>
-        ${colorControl('theme-acc2','#5B6CF9','x')}
+        ${colorControl('theme-acc2','#16A34A','x')}
       </div>
       <div class="form-group" style="margin-top:10px;">
         <label class="form-label" style="font-size:12px;">Page Background</label>
