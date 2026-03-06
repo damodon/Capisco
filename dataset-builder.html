@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dataset Builder — Reportr</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- CodeMirror for SQL editor -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+  <style>
+    /* ── Layout ─────────────────────────────────────────── */
+    .ds-layout {
+      display: flex; flex-direction: column;
+      gap: 16px; min-height: 0;
+    }
+
+    /* ── Step labels ────────────────────────────────────── */
+    .step-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.7px;
+      color: var(--text-3);
+    }
+    .step-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--border); color: var(--text-3);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-num.done { background: var(--green); color: white; }
+    .step-num.active { background: var(--accent); color: white; }
+
+    /* ── Source Config Card ─────────────────────────────── */
+    .source-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 0;
+      min-height: 320px;
+    }
+    .source-left {
+      padding: 20px;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 16px;
+    }
+    .source-right { padding: 0; display: flex; flex-direction: column; }
+
+    /* SQL / Table mode tabs inside the right panel */
+    .source-mode-bar {
+      padding: 12px 20px 0;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0;
+    }
+    .mode-tab {
+      padding: 8px 16px;
+      font-size: 13px; font-weight: 500;
+      color: var(--text-3); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: all var(--t-fast);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .mode-tab:hover { color: var(--text-1); }
+    .mode-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .mode-tab svg { width: 13px; height: 13px; }
+
+    .source-editor-wrap { flex: 1; display: flex; flex-direction: column; }
+    .mode-panel { display: none; flex: 1; flex-direction: column; }
+    .mode-panel.active { display: flex; }
+
+    /* SQL editor */
+    .sql-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface-2);
+    }
+    .sql-info {
+      font-size: 12px; color: var(--text-3); font-family: var(--font-mono);
+      margin-left: auto;
+    }
+
+    /* CodeMirror overrides */
+    .CodeMirror {
+      height: 100%;
+      min-height: 220px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+    .CodeMirror-scroll { padding-bottom: 16px; }
+
+    /* Table picker panel */
+    .table-picker { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+    .schema-table-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .col-checklist {
+      border: 1px solid var(--border); border-radius: var(--r-md);
+      overflow: hidden; background: white;
+    }
+    .col-checklist-header {
+      padding: 8px 12px; background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .col-checklist-body { max-height: 180px; overflow-y: auto; }
+    .col-check-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background var(--t-fast);
+    }
+    .col-check-item:last-child { border-bottom: none; }
+    .col-check-item:hover { background: var(--surface-2); }
+    .col-check-item input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; cursor: pointer; }
+    .col-check-name { font-size: 13px; font-family: var(--font-mono); flex: 1; }
+    .col-check-type { font-size: 11px; color: var(--text-3); }
+
+    /* ── Field Config Table ─────────────────────────────── */
+    .field-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .field-table th {
+      padding: 9px 14px;
+      text-align: left; font-size: 11.5px; font-weight: 600;
+      color: var(--text-3); text-transform: uppercase; letter-spacing: 0.5px;
+      background: var(--surface-2); border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .field-table td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle; font-size: 13px;
+    }
+    .field-table tr:last-child td { border-bottom: none; }
+    .field-table tbody tr { transition: background var(--t-fast); }
+    .field-table tbody tr:hover td { background: #FAFBFF; }
+
+    .field-name-cell {
+      font-family: var(--font-mono); font-size: 12.5px;
+      color: var(--text-2); white-space: nowrap;
+    }
+    .field-alias-input {
+      padding: 5px 9px;
+      border: 1.5px solid transparent;
+      border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 13px;
+      color: var(--text-1); background: transparent;
+      width: 100%; outline: none;
+      transition: all var(--t-fast);
+    }
+    .field-alias-input:hover {
+      border-color: var(--border); background: white;
+    }
+    .field-alias-input:focus {
+      border-color: var(--accent); background: white;
+      box-shadow: 0 0 0 3px rgba(91,108,249,0.10);
+    }
+    .field-type-sel {
+      padding: 4px 28px 4px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 12.5px;
+      color: var(--text-1); background: white;
+      outline: none; cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+      transition: border-color var(--t-fast);
+    }
+    .field-type-sel:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(91,108,249,0.10); }
+
+    .agg-sel {
+      padding: 4px 28px 4px 8px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-family: var(--font); font-size: 12.5px;
+      color: var(--text-1); background: white;
+      outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 6px center;
+    }
+    .agg-sel:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* Visibility eye toggle */
+    .vis-toggle {
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; padding: 4px; border-radius: var(--r-sm);
+      color: var(--text-3); transition: all var(--t-fast);
+      border: none; background: none;
+    }
+    .vis-toggle:hover { background: var(--surface-3); color: var(--text-1); }
+    .vis-toggle.hidden { color: var(--text-4); }
+    .vis-toggle svg { width: 15px; height: 15px; }
+
+    /* Drag handle */
+    .drag-handle {
+      color: var(--text-4); cursor: grab; padding: 4px;
+      display: flex; align-items: center;
+    }
+    .drag-handle svg { width: 14px; height: 14px; }
+
+    /* ── Preview Panel ───────────────────────────────────── */
+    .preview-toggle-btn {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; user-select: none;
+    }
+    .preview-toggle-btn:hover { color: var(--text-1); }
+    .preview-toggle-btn i { transition: transform var(--t-base); }
+    .preview-toggle-btn.open i { transform: rotate(180deg); }
+
+    .preview-body { overflow: hidden; transition: max-height 0.3s ease; max-height: 0; }
+    .preview-body.open { max-height: 400px; }
+
+    .preview-table-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--border);
+    }
+    .preview-table {
+      width: 100%; border-collapse: collapse; min-width: 800px;
+    }
+    .preview-table th {
+      padding: 8px 14px;
+      font-size: 11.5px; font-weight: 600; color: var(--text-3);
+      text-align: left; background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .preview-table td {
+      padding: 8px 14px; font-size: 12.5px; color: var(--text-1);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap; font-family: var(--font-mono);
+    }
+    .preview-table tr:last-child td { border-bottom: none; }
+    .preview-table tbody tr:hover td { background: #FAFBFF; }
+
+    .preview-row-count {
+      padding: 8px 16px;
+      font-size: 12px; color: var(--text-3);
+      border-top: 1px solid var(--border);
+      background: var(--surface-2);
+      border-radius: 0 0 var(--r-lg) var(--r-lg);
+    }
+
+    /* ── Run button state ───────────────────────────────── */
+    .run-spinner { display: none; }
+    .running .run-label { display: none; }
+    .running .run-spinner { display: inline-block; }
+
+    /* ── Query run success toast ────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #111827; color: white;
+      padding: 12px 18px; border-radius: var(--r-md);
+      font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(80px); opacity: 0;
+      transition: all var(--t-slow) var(--ease);
+      z-index: 9999;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast svg { width: 16px; height: 16px; color: var(--green); flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <div id="sidebar"></div>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <a href="dataset-builder.html" class="bc-item">Datasets</a>
+          <span class="bc-sep"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="bc-item active" id="ds-name-bc">Untitled Dataset</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost btn-sm" id="btn-discard">
+          <i data-lucide="x"></i>
+          Discard
+        </button>
+        <button class="btn btn-secondary btn-sm" id="btn-preview-top" onclick="runQuery()">
+          <i data-lucide="play"></i>
+          Run Query
+        </button>
+        <button class="btn btn-primary" id="btn-save-ds" onclick="saveDataset()">
+          <i data-lucide="save" class="btn-label"></i>
+          <span class="btn-label">Save Dataset</span>
+          <span class="spinner"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <div class="ds-layout">
+
+        <!-- ── Step 1: Source Config ─────────────────────── -->
+        <div class="card">
+          <div class="card-header">
+            <div class="step-label">
+              <span class="step-num active" id="step1-num">1</span>
+              Source Configuration
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+              <span id="query-status" class="badge badge-neutral" style="display:none;"></span>
+            </div>
+          </div>
+
+          <div class="source-grid">
+
+            <!-- Left: connection & name -->
+            <div class="source-left">
+              <div class="form-group">
+                <label class="form-label">Connection <span class="required">*</span></label>
+                <select class="form-input form-select" id="sel-connection">
+                  <option value="">Select a connection…</option>
+                  <option value="1" selected>Production Analytics (Vertica)</option>
+                  <option value="2">Staging — Vertica</option>
+                  <option value="3">Marketing DWH (PostgreSQL)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Dataset Name <span class="required">*</span></label>
+                <input class="form-input" id="ds-name" type="text" placeholder="e.g. Order Revenue"
+                       oninput="updateNameBc()">
+                <span class="form-hint">Used in the UI and as a reference for visualisations.</span>
+              </div>
+
+              <div class="form-group" style="margin-top:auto;">
+                <label class="form-label">Description <span class="text-muted text-sm" style="font-weight:400;">(optional)</span></label>
+                <textarea class="form-input form-textarea" id="ds-desc"
+                          placeholder="What does this dataset represent?" style="min-height:64px;resize:none;"></textarea>
+              </div>
+            </div>
+
+            <!-- Right: SQL / Table picker -->
+            <div class="source-right">
+              <div class="source-mode-bar">
+                <div class="mode-tab active" id="tab-sql" onclick="switchMode('sql')">
+                  <i data-lucide="code-2"></i>
+                  SQL Query
+                </div>
+                <div class="mode-tab" id="tab-table" onclick="switchMode('table')">
+                  <i data-lucide="table-2"></i>
+                  Table Picker
+                </div>
+              </div>
+
+              <div class="source-editor-wrap">
+
+                <!-- SQL mode -->
+                <div class="mode-panel active" id="panel-sql">
+                  <div class="sql-toolbar">
+                    <button class="btn btn-primary btn-sm" id="btn-run" onclick="runQuery()">
+                      <i data-lucide="play" class="run-label btn-label" style="width:13px;height:13px;"></i>
+                      <span class="run-label btn-label">Run Query</span>
+                      <span class="run-spinner spinner"></span>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="formatSQL()">
+                      <i data-lucide="align-left" style="width:13px;height:13px;"></i>
+                      Format
+                    </button>
+                    <div class="sql-info" id="sql-info">Ctrl+Enter to run</div>
+                  </div>
+                  <div id="sql-editor-wrap" style="flex:1;"></div>
+                </div>
+
+                <!-- Table mode -->
+                <div class="mode-panel" id="panel-table">
+                  <div class="table-picker">
+                    <div class="schema-table-row">
+                      <div class="form-group">
+                        <label class="form-label">Schema</label>
+                        <select class="form-input form-select" id="sel-schema" onchange="onSchemaChange()">
+                          <option value="reporting">reporting</option>
+                          <option value="public">public</option>
+                          <option value="staging">staging</option>
+                          <option value="raw">raw</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Table</label>
+                        <select class="form-input form-select" id="sel-table" onchange="onTableChange()">
+                          <option value="">Select table…</option>
+                          <option value="orders">orders</option>
+                          <option value="customers">customers</option>
+                          <option value="products">products</option>
+                          <option value="order_items">order_items</option>
+                          <option value="campaigns">campaigns</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="form-group" id="col-checklist-wrap" style="display:none;">
+                      <label class="form-label">Columns to include</label>
+                      <div class="col-checklist" id="col-checklist">
+                        <!-- rendered by JS -->
+                      </div>
+                    </div>
+
+                    <div id="table-run-wrap" style="display:none;">
+                      <button class="btn btn-primary btn-sm" onclick="runQuery()">
+                        <i data-lucide="play"></i>
+                        Load Preview
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Step 2: Field Configuration ──────────────── -->
+        <div class="card" id="field-config-card">
+          <div class="card-header">
+            <div class="step-label">
+              <span class="step-num" id="step2-num">2</span>
+              Field Configuration
+            </div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+              <span class="text-sm text-muted" id="field-count-label"></span>
+              <button class="btn btn-ghost btn-sm" id="btn-add-field" onclick="addComputedField()" style="display:none;">
+                <i data-lucide="plus"></i>
+                Add computed field
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty state before query run -->
+          <div id="fields-empty" class="empty-state" style="padding:50px 24px;">
+            <div class="empty-icon"><i data-lucide="play-circle"></i></div>
+            <div class="empty-title">Run a query to configure fields</div>
+            <div class="empty-desc">Write your SQL or pick a table, then hit Run Query to load and configure fields.</div>
+          </div>
+
+          <!-- Field table (populated after run) -->
+          <div id="fields-table-wrap" style="display:none; overflow-x:auto;">
+            <table class="field-table" id="field-table">
+              <thead>
+                <tr>
+                  <th style="width:28px;"></th>
+                  <th>Source Field</th>
+                  <th style="min-width:160px;">Alias</th>
+                  <th style="min-width:130px;">Data Type</th>
+                  <th style="min-width:140px;">Role</th>
+                  <th style="min-width:120px;">Aggregation</th>
+                  <th style="width:50px;text-align:center;">Visible</th>
+                </tr>
+              </thead>
+              <tbody id="field-tbody">
+                <!-- rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Step 3: Data Preview ──────────────────────── -->
+        <div class="card" id="preview-card">
+          <div class="card-header" style="cursor:pointer;" onclick="togglePreview()">
+            <div class="step-label">
+              <span class="step-num" id="step3-num">3</span>
+              Data Preview
+            </div>
+            <span class="text-sm text-muted" id="preview-count-label"></span>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+              <span id="preview-badge"></span>
+              <button class="preview-toggle-btn" id="preview-toggle-btn">
+                <i data-lucide="chevron-down"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-body" id="preview-body">
+            <!-- Preview empty state -->
+            <div id="preview-empty" style="padding:40px 24px;text-align:center;">
+              <div style="color:var(--text-3);font-size:13.5px;">Run a query to see a data preview.</div>
+            </div>
+            <!-- Preview table (shown after run) -->
+            <div id="preview-table-wrap" class="preview-table-wrap" style="display:none;">
+              <table class="preview-table" id="preview-table">
+                <thead><tr id="preview-head"></tr></thead>
+                <tbody id="preview-body-rows"></tbody>
+              </table>
+              <div class="preview-row-count" id="preview-row-count"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /ds-layout -->
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <i data-lucide="check-circle-2"></i>
+  <span id="toast-msg">Query executed — 100 rows returned</span>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="nav.js"></script>
+<script src="dataset-builder.js"></script>
+</body>
+</html>

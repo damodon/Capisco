@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Builder — Reportr</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    body { overflow: hidden; }
+    .main { height: 100vh; overflow: hidden; }
+
+    /* ── Three-panel shell ──────────────────────────────── */
+    .db-shell {
+      display: grid;
+      grid-template-columns: 220px 1fr 272px;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
+
+    /* ── Left Panel ─────────────────────────────────────── */
+    .db-left {
+      background: white;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .db-left-tabs {
+      display: flex; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .db-left-tab {
+      flex: 1; padding: 10px 6px;
+      font-size: 11.5px; font-weight: 600;
+      text-align: center; cursor: pointer;
+      color: var(--text-3); border-bottom: 2px solid transparent;
+      transition: all var(--t-fast); margin-bottom: -1px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .db-left-tab:hover { color: var(--text-1); }
+    .db-left-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .db-left-body { flex: 1; overflow-y: auto; padding: 12px; }
+
+    .left-section-title {
+      font-size: 10.5px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: 0.7px;
+      padding: 8px 4px 6px;
+    }
+
+    .add-row-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: var(--r-md);
+      border: 1.5px dashed var(--border);
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; width: 100%;
+      background: transparent; font-family: var(--font);
+      transition: all var(--t-fast); margin-bottom: 8px;
+    }
+    .add-row-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .add-row-btn svg { width: 14px; height: 14px; }
+
+    /* Vis library cards */
+    .vis-lib-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      cursor: grab; margin-bottom: 6px;
+      background: white; transition: all var(--t-fast);
+    }
+    .vis-lib-card:hover { border-color: var(--accent); box-shadow: var(--shadow-sm); background: var(--accent-light); }
+    .vis-lib-card:active { cursor: grabbing; }
+    .vis-lib-icon {
+      width: 32px; height: 32px; border-radius: var(--r-sm);
+      background: var(--surface-3); display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; color: var(--text-2);
+    }
+    .vis-lib-icon svg { width: 15px; height: 15px; }
+    .vis-lib-name { font-size: 12.5px; font-weight: 500; color: var(--text-1); }
+    .vis-lib-ds   { font-size: 11px; color: var(--text-3); }
+
+    /* Text block template */
+    .text-block-tmpl {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--r-md);
+      border: 1px solid var(--border); cursor: grab; margin-bottom: 6px;
+      background: white; transition: all var(--t-fast);
+    }
+    .text-block-tmpl:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+
+    /* ── Canvas ─────────────────────────────────────────── */
+    .db-canvas-wrap {
+      background: var(--bg);
+      overflow-y: auto; overflow-x: hidden;
+      display: flex; flex-direction: column;
+    }
+    .canvas-toolbar {
+      padding: 8px 16px; background: white;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; position: sticky; top: 0; z-index: 20;
+    }
+    .zoom-control {
+      display: flex; align-items: center; gap: 4px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      padding: 3px 6px; background: white; font-size: 12px; color: var(--text-2);
+    }
+    .zoom-control button {
+      border: none; background: none; cursor: pointer; padding: 1px 4px;
+      font-size: 14px; color: var(--text-2); font-family: var(--font);
+    }
+    .zoom-control button:hover { color: var(--text-1); }
+    .zoom-val { font-weight: 500; color: var(--text-1); min-width: 36px; text-align: center; font-size: 12.5px; }
+
+    .db-canvas {
+      flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 0;
+    }
+
+    /* ── Page frame ─────────────────────────────────────── */
+    .page-frame {
+      width: 100%; max-width: 960px; margin: 0 auto;
+      min-height: 100%;
+      transition: background var(--t-base), padding var(--t-base);
+      cursor: default;
+    }
+    .page-frame.selected { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm); }
+
+    /* ── Row ────────────────────────────────────────────── */
+    .db-row {
+      position: relative; margin-bottom: 12px;
+      border-radius: var(--r-md); transition: outline var(--t-fast);
+    }
+    .db-row:hover .row-controls { opacity: 1; }
+    .db-row.selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .row-controls {
+      position: absolute; top: -26px; left: 0;
+      display: flex; align-items: center; gap: 4px;
+      opacity: 0; transition: opacity var(--t-fast);
+      z-index: 10;
+    }
+    .row-ctrl-btn {
+      height: 22px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: var(--r-sm);
+      background: white; font-size: 11px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; display: flex; align-items: center; gap: 4px;
+      box-shadow: var(--shadow-xs); white-space: nowrap; font-family: var(--font);
+      transition: all var(--t-fast);
+    }
+    .row-ctrl-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .row-ctrl-btn svg { width: 11px; height: 11px; }
+    .row-ctrl-btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+    .row-inner {
+      display: flex; gap: 12px; padding: 12px;
+      min-height: 80px;
+    }
+
+    /* ── Container ──────────────────────────────────────── */
+    .db-container {
+      flex: 1; border-radius: var(--r-md);
+      border: 1px solid var(--border);
+      background: white;
+      min-height: 160px; position: relative;
+      transition: outline var(--t-fast), box-shadow var(--t-fast);
+      cursor: pointer;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .db-container:hover { box-shadow: 0 0 0 2px rgba(91,108,249,0.2); }
+    .db-container.selected { outline: 2px solid var(--accent); outline-offset: 0; box-shadow: 0 0 0 4px rgba(91,108,249,0.12); }
+
+    .container-header {
+      padding: 10px 14px 0;
+      font-size: 12px; font-weight: 600; color: var(--text-2);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .container-header-title { flex: 1; }
+    .container-type-badge {
+      font-size: 10.5px; color: var(--text-3);
+      background: var(--surface-3); padding: 1px 6px;
+      border-radius: var(--r-full); flex-shrink: 0;
+    }
+    .container-body { flex: 1; padding: 10px 14px 14px; position: relative; }
+
+    /* Mini chart inside container */
+    .mini-chart-wrap { position: relative; width: 100%; height: 100%; min-height: 120px; }
+    .mini-chart-wrap canvas { max-height: 160px; }
+
+    /* KPI card */
+    .kpi-card {
+      display: flex; flex-direction: column;
+      align-items: flex-start; justify-content: center;
+      height: 100%; padding: 8px 4px;
+    }
+    .kpi-label { font-size: 11.5px; font-weight: 500; color: var(--text-3); margin-bottom: 4px; }
+    .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-1); line-height: 1; letter-spacing: -1px; }
+    .kpi-trend {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 12px; font-weight: 500; margin-top: 6px;
+    }
+    .kpi-trend.up   { color: var(--green); }
+    .kpi-trend.down { color: var(--red); }
+    .kpi-trend svg { width: 13px; height: 13px; }
+
+    /* Text block in container */
+    .text-block {
+      font-size: 13.5px; color: var(--text-2);
+      line-height: 1.65; padding: 4px 0;
+    }
+
+    /* Container drop zone */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--r-md);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 6px; height: 120px; color: var(--text-3);
+      transition: all var(--t-fast); cursor: pointer;
+    }
+    .drop-zone:hover { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+    .drop-zone svg { width: 20px; height: 20px; }
+    .drop-zone span { font-size: 12px; font-weight: 500; }
+
+    /* Add row at bottom */
+    .add-row-footer {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0; color: var(--text-3); cursor: pointer;
+      border: 2px dashed transparent; border-radius: var(--r-md);
+      justify-content: center; transition: all var(--t-fast);
+      font-size: 13px; font-weight: 500;
+    }
+    .add-row-footer:hover { border-color: var(--accent-mid); color: var(--accent); background: var(--accent-light); }
+    .add-row-footer svg { width: 16px; height: 16px; }
+
+    /* ── Right Style Panel ──────────────────────────────── */
+    .db-right {
+      background: white;
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .style-panel-header {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0;
+    }
+    .style-panel-title { font-size: 13px; font-weight: 600; color: var(--text-1); flex: 1; }
+    .style-panel-body  { flex: 1; overflow-y: auto; padding: 0; }
+
+    .style-section {
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+    .style-section:last-child { border-bottom: none; }
+    .style-section-head {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 12px; cursor: pointer; user-select: none;
+    }
+    .style-section-title {
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.7px; color: var(--text-3); flex: 1;
+    }
+    .style-section-head svg { width: 13px; height: 13px; color: var(--text-3); transition: transform var(--t-base); }
+    .style-section-head.closed svg { transform: rotate(-90deg); }
+    .style-section-body { display: flex; flex-direction: column; gap: 10px; }
+    .style-section-body.closed { display: none; }
+
+    /* Color control */
+    .color-control {
+      display: flex; align-items: center; gap: 8px;
+      border: 1.5px solid var(--border); border-radius: var(--r-md);
+      padding: 5px 10px; background: white; cursor: pointer;
+      transition: border-color var(--t-fast);
+    }
+    .color-control:focus-within { border-color: var(--accent); }
+    .color-swatch {
+      width: 20px; height: 20px; border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.1); flex-shrink: 0;
+      cursor: pointer;
+    }
+    .color-input-native { opacity: 0; width: 0; height: 0; position: absolute; }
+    .color-hex {
+      font-size: 12.5px; font-family: var(--font-mono);
+      color: var(--text-1); border: none; outline: none;
+      background: transparent; width: 100%;
+    }
+
+    /* Spacing 4-up control */
+    .spacing-control {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .spacing-input {
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      padding: 4px 8px; font-family: var(--font-mono); font-size: 12px;
+      color: var(--text-1); outline: none; width: 100%;
+      transition: border-color var(--t-fast);
+    }
+    .spacing-input:focus { border-color: var(--accent); }
+    .spacing-label {
+      font-size: 10px; color: var(--text-3); text-align: center;
+      font-weight: 500; margin-top: -4px;
+    }
+
+    /* Border radius corners */
+    .radius-control {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    /* Shadow presets */
+    .shadow-presets { display: flex; gap: 6px; }
+    .shadow-preset {
+      flex: 1; padding: 6px 4px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); text-align: center;
+      font-size: 11px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; transition: all var(--t-fast);
+      background: white;
+    }
+    .shadow-preset:hover { border-color: var(--accent); color: var(--accent); }
+    .shadow-preset.active { border-color: var(--accent); background: var(--accent-light); color: var(--accent-text); }
+    .shadow-preview {
+      width: 100%; height: 20px;
+      background: white; border-radius: 3px;
+      margin-bottom: 4px;
+    }
+
+    /* Column adjuster */
+    .col-adjuster { display: flex; gap: 4px; align-items: center; }
+    .col-adj-btn {
+      width: 26px; height: 26px; border: 1.5px solid var(--border);
+      border-radius: var(--r-sm); background: white; cursor: pointer;
+      font-size: 15px; color: var(--text-2); display: flex;
+      align-items: center; justify-content: center; transition: all var(--t-fast);
+    }
+    .col-adj-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .col-adj-val {
+      font-size: 13px; font-weight: 600; color: var(--text-1);
+      min-width: 24px; text-align: center;
+    }
+
+    /* Col width visualiser */
+    .col-widths-visual { display: flex; gap: 3px; height: 28px; }
+    .col-width-bar {
+      border-radius: 3px; background: var(--accent-light);
+      border: 1.5px solid var(--accent-mid);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 600; color: var(--accent-text);
+      transition: flex var(--t-slow) var(--ease);
+    }
+
+    /* Selected indicator */
+    .selection-indicator {
+      display: flex; align-items: center; gap: 6px; padding: 8px 16px;
+      background: var(--accent-light); border-bottom: 1px solid var(--accent-mid);
+      font-size: 12px; font-weight: 500; color: var(--accent-text);
+    }
+    .selection-indicator svg { width: 13px; height: 13px; }
+
+    /* Responsive preview */
+    .preview-mode-row {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .preview-mode-btn {
+      padding: 4px 10px; border-radius: var(--r-sm);
+      border: 1.5px solid var(--border); background: white;
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; font-family: var(--font); transition: all var(--t-fast);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .preview-mode-btn svg { width: 13px; height: 13px; }
+    .preview-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .preview-mode-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Publish btn */
+    .btn-publish {
+      background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
+      color: white; border: none;
+      box-shadow: 0 2px 8px rgba(91,108,249,0.35);
+    }
+    .btn-publish:hover:not(:disabled) {
+      box-shadow: 0 4px 16px rgba(91,108,249,0.45);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div id="sidebar"></div>
+
+  <main class="main">
+    <!-- Top Bar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <a href="dashboard-builder.html" class="bc-item">Dashboards</a>
+          <span class="bc-sep"><i data-lucide="chevron-right" style="width:12px;height:12px;"></i></span>
+          <span class="bc-item active">Sales Performance</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="preview-mode-row">
+          <button class="preview-mode-btn active" id="btn-edit" onclick="setMode('edit',this)">
+            <i data-lucide="layout-dashboard"></i> Edit
+          </button>
+          <button class="preview-mode-btn" id="btn-preview" onclick="setMode('preview',this)">
+            <i data-lucide="eye"></i> Preview
+          </button>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-left:4px;">
+          <i data-lucide="save"></i> Save
+        </button>
+        <button class="btn btn-publish" onclick="openPublishPanel()">
+          <i data-lucide="radio"></i> Publish
+        </button>
+      </div>
+    </div>
+
+    <!-- Builder Shell -->
+    <div class="db-shell" id="db-shell">
+
+      <!-- ── Left Panel ──────────────────────────────────── -->
+      <div class="db-left">
+        <div class="db-left-tabs">
+          <div class="db-left-tab active" onclick="switchLeftTab('elements',this)">Elements</div>
+          <div class="db-left-tab" onclick="switchLeftTab('layers',this)">Layers</div>
+          <div class="db-left-tab" onclick="switchLeftTab('theme',this)">Theme</div>
+        </div>
+        <div class="db-left-body" id="left-body">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+
+      <!-- ── Canvas ──────────────────────────────────────── -->
+      <div class="db-canvas-wrap" id="canvas-wrap" onclick="onCanvasClick(event)">
+
+        <div class="canvas-toolbar">
+          <div class="zoom-control">
+            <button onclick="adjustZoom(-10)">−</button>
+            <span class="zoom-val" id="zoom-val">100%</span>
+            <button onclick="adjustZoom(10)">+</button>
+          </div>
+          <span class="text-sm text-muted" id="canvas-hint">Click any element to select it</span>
+          <div style="margin-left:auto;display:flex;gap:6px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="toggleMobilePreview()">
+              <i data-lucide="smartphone"></i> Mobile
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="undoAction()">
+              <i data-lucide="undo-2"></i>
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="redoAction()">
+              <i data-lucide="redo-2"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="db-canvas" id="db-canvas">
+          <div class="page-frame" id="page-frame" data-sel="page">
+            <!-- Rows rendered by JS -->
+            <div id="rows-container"></div>
+            <div class="add-row-footer" onclick="addRow()">
+              <i data-lucide="plus-circle"></i>
+              Add Row
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Right Style Panel ────────────────────────────── -->
+      <div class="db-right" id="db-right">
+        <div class="style-panel-header">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;">
+            <i data-lucide="sliders" style="width:15px;height:15px;color:var(--accent);"></i>
+            <span class="style-panel-title" id="style-panel-title">Page Properties</span>
+          </div>
+        </div>
+        <div class="style-panel-body" id="style-panel-body">
+          <!-- Rendered by JS based on selection -->
+        </div>
+      </div>
+
+    </div><!-- /db-shell -->
+  </main>
+</div>
+
+<!-- Publish Panel Overlay -->
+<div class="overlay" id="overlay" onclick="closePublishPanel()"></div>
+<div class="panel" id="publish-panel">
+  <div class="panel-header">
+    <div class="panel-icon" style="background:linear-gradient(135deg,var(--accent-light),var(--purple-light));">
+      <i data-lucide="radio" style="color:var(--accent);"></i>
+    </div>
+    <div style="flex:1;">
+      <div class="panel-title">Publish Dashboard</div>
+      <div class="panel-subtitle">Make this dashboard accessible to end users</div>
+    </div>
+    <button class="btn btn-icon" onclick="closePublishPanel()"><i data-lucide="x"></i></button>
+  </div>
+  <div class="panel-body">
+
+    <div class="panel-section">
+      <div class="panel-section-title">Publication Target</div>
+      <div style="display:flex;flex-direction:column;gap:10px;" id="pub-target-options">
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--accent);border-radius:var(--r-md);cursor:pointer;background:var(--accent-light);">
+          <input type="radio" name="pub-target" value="embed" checked style="margin-top:2px;accent-color:var(--accent);">
+          <div>
+            <div style="font-size:13.5px;font-weight:600;">Embed (iFrame)</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:3px;">Generate an embed URL and iframe snippet for use in any web page or portal.</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:12px;padding:14px;border:1.5px solid var(--border);border-radius:var(--r-md);cursor:pointer;">
+          <input type="radio" name="pub-target" value="native" style="margin-top:2px;accent-color:var(--accent);">
+          <div>
+            <div style="font-size:13.5px;font-weight:600;">Native (App Component)</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:3px;">Render as a first-party React component within the host application.</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Access Control</div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div class="option-row">
+          <div>
+            <div style="font-size:13px;font-weight:500;">Token Authentication (JWT)</div>
+            <div style="font-size:12px;color:var(--text-3);margin-top:2px;">Require a signed token from the host app</div>
+          </div>
+          <label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Allowed Domains</label>
+          <input class="form-input" type="text" placeholder="app.yourcompany.com, *.yourcompany.com" value="app.yourcompany.com">
+          <span class="form-hint">Comma-separated. Embed will only render from these origins.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Embed Appearance</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="option-row"><span class="option-label">Show title bar</span><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        <div class="option-row"><span class="option-label">Show filter bar</span><label class="toggle"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        <div class="option-row"><span class="option-label">Show Reportr branding</span><label class="toggle"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        <div class="form-group">
+          <label class="form-label">Theme</label>
+          <select class="form-input form-select"><option>Light (Default)</option><option>Dark</option><option>Auto (system)</option><option>Custom CSS</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-title">Generated Embed Code</div>
+      <div style="background:#1E2130;border-radius:var(--r-md);padding:14px;font-family:var(--font-mono);font-size:11.5px;color:#A0A8C0;line-height:1.7;overflow-x:auto;">
+        <span style="color:#C792EA;">&lt;iframe</span><br>
+        &nbsp;&nbsp;<span style="color:#82AAFF;">src</span>=<span style="color:#C3E88D;">"https://reportr.yourcompany.com/embed/d/sales-performance?token=JWT"</span><br>
+        &nbsp;&nbsp;<span style="color:#82AAFF;">width</span>=<span style="color:#C3E88D;">"100%"</span><br>
+        &nbsp;&nbsp;<span style="color:#82AAFF;">height</span>=<span style="color:#C3E88D;">"680"</span><br>
+        &nbsp;&nbsp;<span style="color:#82AAFF;">frameborder</span>=<span style="color:#C3E88D;">"0"</span><br>
+        &nbsp;&nbsp;<span style="color:#82AAFF;">allowfullscreen</span><br>
+        <span style="color:#C792EA;">&gt;&lt;/iframe&gt;</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="this.textContent='Copied!'">
+        <i data-lucide="copy"></i> Copy snippet
+      </button>
+    </div>
+
+  </div>
+  <div class="panel-footer">
+    <button class="btn btn-ghost" onclick="closePublishPanel()">Cancel</button>
+    <button class="btn btn-publish" onclick="publish()">
+      <i data-lucide="radio" class="btn-label"></i>
+      <span class="btn-label">Publish Dashboard</span>
+      <span class="spinner"></span>
+    </button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="nav.js"></script>
+<script src="dashboard-builder.js"></script>
+</body>
+</html>
