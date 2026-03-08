@@ -98,6 +98,17 @@ const PUBLISHED_ITEMS = [
     chartType: 'bar', slug: 'investor-q3-25',
     datasets: ['Financial Summary'],
   },
+  {
+    id: 'p11', type: 'scrollyteller', access: 'public',
+    title: 'Q4 2025 — Revenue in Focus',
+    description: 'A scroll-driven data story covering regional performance, channel breakdown, and monthly revenue trends.',
+    publishedDate: 'Mar 1, 2026', updatedDate: 'Today',
+    views: 1247, embeds: 1, isArchived: false,
+    chartType: 'scrollyteller', slug: 'q4-2025-revenue-in-focus',
+    href: 'scrollyteller-example.html',
+    datasets: ['Order Revenue', 'Regional Sales'],
+    sections: 5,
+  },
 ];
 
 /* ── STATE ─────────────────────────────────────────────────── */
@@ -123,10 +134,11 @@ function renderPubGrid() {
 
   const filtered = PUBLISHED_ITEMS.filter(item => {
     const matchFilter =
-      currentFilter === 'all'       ? !item.isArchived :
-      currentFilter === 'dashboard' ? !item.isArchived && item.type === 'dashboard' :
-      currentFilter === 'report'    ? !item.isArchived && item.type === 'report' :
-      currentFilter === 'archived'  ? item.isArchived : true;
+      currentFilter === 'all'          ? !item.isArchived :
+      currentFilter === 'dashboard'    ? !item.isArchived && item.type === 'dashboard' :
+      currentFilter === 'report'       ? !item.isArchived && item.type === 'report' :
+      currentFilter === 'scrollyteller'? !item.isArchived && item.type === 'scrollyteller' :
+      currentFilter === 'archived'     ? item.isArchived : true;
     const matchSearch = !search ||
       item.title.toLowerCase().includes(search) ||
       item.description.toLowerCase().includes(search);
@@ -145,8 +157,11 @@ function renderPubGrid() {
 }
 
 function pubCardHtml(item) {
-  const typeBadge = item.type === 'dashboard'
-    ? `<span class="badge badge-neutral" style="font-size:11px;"><i data-lucide="layout-dashboard" style="width:10px;height:10px;margin-right:3px;"></i>Dashboard</span>`
+  const typeBadge =
+    item.type === 'dashboard'
+      ? `<span class="badge badge-neutral" style="font-size:11px;"><i data-lucide="layout-dashboard" style="width:10px;height:10px;margin-right:3px;"></i>Dashboard</span>`
+    : item.type === 'scrollyteller'
+      ? `<span class="badge" style="font-size:11px;background:#F0FDF4;color:#15803D;border:1px solid #BBF7D0;"><i data-lucide="scroll-text" style="width:10px;height:10px;margin-right:3px;"></i>Scrollyteller</span>`
     : `<span class="badge badge-neutral" style="font-size:11px;"><i data-lucide="file-text" style="width:10px;height:10px;margin-right:3px;"></i>Report</span>`;
 
   const accessBadge = {
@@ -163,22 +178,49 @@ function pubCardHtml(item) {
     : '';
 
   const thumbBg = {
-    bar:      'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
-    line:     'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
-    doughnut: 'linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%)',
+    bar:           'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)',
+    line:          'linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%)',
+    doughnut:      'linear-gradient(135deg, #FFF7ED 0%, #FED7AA 100%)',
+    scrollyteller: '#0D1117',
   }[item.chartType] || 'linear-gradient(135deg, #F8FAFC, #F1F5F9)';
+
+  const viewHref = item.href || '#';
+
+  // Pre-build dots using concatenation to avoid triple-nested template literals
+  const scrollyDots = [0,1,2,3,4].map(i =>
+    '<div style="width:6px;height:6px;border-radius:50%;background:' +
+    (i === 0 ? '#16A34A' : 'rgba(255,255,255,0.25)') + ';"></div>'
+  ).join('');
+
+  const scrollyThumb = item.type === 'scrollyteller' ? `
+    <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;position:relative;overflow:hidden;">
+      <svg viewBox="0 0 280 130" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.18;">
+        <rect x="20"  y="60"  width="28" height="50" rx="3" fill="#16A34A"/>
+        <rect x="60"  y="40"  width="28" height="70" rx="3" fill="#16A34A"/>
+        <rect x="100" y="20"  width="28" height="90" rx="3" fill="#16A34A"/>
+        <rect x="140" y="50"  width="28" height="60" rx="3" fill="#16A34A"/>
+        <rect x="180" y="35"  width="28" height="75" rx="3" fill="#16A34A"/>
+        <rect x="220" y="55"  width="28" height="55" rx="3" fill="#16A34A"/>
+      </svg>
+      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px;text-align:center;position:relative;z-index:1;">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.9);letter-spacing:0.5px;">Q4 2025 · Revenue in Focus</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;">5 sections · scroll story</div>
+      </div>
+      <div style="display:flex;gap:4px;position:relative;z-index:1;">${scrollyDots}</div>
+    </div>
+  ` : `<canvas id="chart-${item.id}" width="280" height="130"></canvas>`;
 
   return `
     <div class="pub-card" id="pubcard-${item.id}">
       <div class="pub-thumb" style="background:${thumbBg};">
-        <canvas id="chart-${item.id}" width="280" height="130"></canvas>
+        ${scrollyThumb}
         <div class="pub-thumb-overlay">
           <button class="pub-thumb-action" onclick="event.stopPropagation();openEmbedPanel('${item.id}')">
             <i data-lucide="code-2"></i> Embed
           </button>
-          <button class="pub-thumb-action" onclick="event.stopPropagation();">
+          <a class="pub-thumb-action" href="${viewHref}" target="_blank" onclick="event.stopPropagation();" style="text-decoration:none;">
             <i data-lucide="external-link"></i> View
-          </button>
+          </a>
         </div>
       </div>
       <div class="pub-card-body">
@@ -202,9 +244,9 @@ function pubCardHtml(item) {
         <button class="pub-action-btn" onclick="openEmbedPanel('${item.id}')">
           <i data-lucide="code-2"></i> Embed
         </button>
-        <button class="pub-action-btn">
+        <a class="pub-action-btn" href="${item.type === 'scrollyteller' ? 'scrollyteller-builder.html' : '#'}" style="text-decoration:none;">
           <i data-lucide="pencil"></i> Edit
-        </button>
+        </a>
         <button class="pub-action-btn danger">
           <i data-lucide="archive"></i> Archive
         </button>

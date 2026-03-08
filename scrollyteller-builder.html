@@ -45,14 +45,45 @@
     .section-card-meta { font-size: 10.5px; color: var(--text-3); display: flex; align-items: center; gap: 6px; }
     .section-card-meta svg { width: 10px; height: 10px; }
     .add-section-btn {
-      margin: 8px; padding: 8px;
-      border: 1.5px dashed var(--border); border-radius: var(--r-md);
-      background: none; cursor: pointer; font-size: 12.5px; font-weight: 500;
-      color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 6px;
+      margin: 8px 8px 10px; padding: 9px 12px;
+      border: none; border-radius: var(--r-md);
+      background: var(--accent); cursor: pointer;
+      font-size: 12.5px; font-weight: 600;
+      color: white; display: flex; align-items: center; justify-content: center; gap: 6px;
       transition: all var(--t-fast);
+      box-shadow: 0 1px 4px rgba(22,163,74,0.35);
     }
-    .add-section-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .add-section-btn:hover { background: #15803D; box-shadow: 0 2px 8px rgba(22,163,74,0.45); transform: translateY(-1px); }
     .add-section-btn svg { width: 14px; height: 14px; }
+
+    /* Section card actions (move up/down/delete) */
+    .section-card { position: relative; }
+    .section-card-actions {
+      position: absolute; top: 5px; right: 5px;
+      display: none; align-items: center; gap: 1px;
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--r-sm); padding: 1px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .section-card:hover .section-card-actions { display: flex; }
+    .sec-action-btn {
+      width: 20px; height: 20px; border: none; background: none;
+      border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-3); transition: all var(--t-fast);
+    }
+    .sec-action-btn:hover { background: var(--surface-3); color: var(--text-1); }
+    .sec-action-btn.del:hover { background: #FEE2E2; color: #DC2626; }
+    .sec-action-btn svg { width: 11px; height: 11px; pointer-events: none; }
+
+    /* Drag handle */
+    .section-drag-handle {
+      position: absolute; left: 0; top: 0; bottom: 0; width: 16px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--border); cursor: grab; opacity: 0;
+      transition: opacity var(--t-fast);
+    }
+    .section-card:hover .section-drag-handle { opacity: 1; }
+    .section-drag-handle svg { width: 10px; height: 10px; }
 
     /* ── Center: Canvas ─────────────────────────── */
     .canvas-wrap {
@@ -390,7 +421,7 @@
     .modal-overlay.open { display: flex; }
     .modal-box {
       background: white; border-radius: var(--r-xl);
-      padding: 28px; max-width: 560px; width: 90%;
+      padding: 28px; max-width: 640px; width: 95%;
       box-shadow: var(--shadow-lg);
       transform: scale(0.96);
       animation: modalIn 0.2s var(--ease) forwards;
@@ -401,29 +432,164 @@
     .modal-layout-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
     .modal-layout-opt {
       border: 1.5px solid var(--border); border-radius: var(--r-lg);
-      padding: 14px 10px 10px; cursor: pointer; text-align: center;
+      padding: 12px 10px 12px; cursor: pointer; text-align: center;
       transition: all var(--t-fast);
     }
-    .modal-layout-opt:hover { border-color: var(--accent); background: var(--accent-light); }
-    .modal-layout-thumb { height: 60px; border-radius: 6px; background: #EFF1F5; margin-bottom: 8px; overflow: hidden; }
-    .modal-layout-label { font-size: 12px; font-weight: 600; color: var(--text-2); }
-    .modal-layout-sub { font-size: 11px; color: var(--text-3); margin-top: 2px; }
+    .modal-layout-opt:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.12); }
+    .modal-layout-opt:hover .modal-layout-label { color: var(--accent-text); }
+    .modal-layout-thumb {
+      height: 72px; border-radius: 6px; background: #EFF1F5;
+      margin-bottom: 10px; overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+    .modal-layout-label { font-size: 12.5px; font-weight: 700; color: var(--text-1); }
+    .modal-layout-sub { font-size: 11px; color: var(--text-3); margin-top: 3px; line-height: 1.4; }
+    .modal-layout-arrow {
+      margin-top: 8px; font-size: 10px; font-weight: 600; color: var(--accent-text);
+      background: var(--accent-light); border-radius: var(--r-full);
+      padding: 2px 8px; display: inline-block; opacity: 0;
+      transition: opacity var(--t-fast);
+    }
+    .modal-layout-opt:hover .modal-layout-arrow { opacity: 1; }
     .modal-footer { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
+
+    /* Element picker modal */
+    .element-picker-modal-box {
+      background: white; border-radius: var(--r-xl);
+      padding: 24px; max-width: 620px; width: 95%;
+      box-shadow: var(--shadow-lg); max-height: 88vh; overflow-y: auto;
+      transform: scale(0.96);
+      animation: modalIn 0.2s var(--ease) forwards;
+    }
+    .element-picker-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+      margin-top: 4px;
+    }
+    .element-picker-item {
+      border: 1.5px solid var(--border); border-radius: var(--r-md);
+      padding: 12px 8px 10px; cursor: pointer; text-align: center;
+      transition: all var(--t-fast); background: white;
+    }
+    .element-picker-item:hover { border-color: var(--accent); background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(22,163,74,0.12); }
+    .ep-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      background: var(--surface-3); display: flex; align-items: center;
+      justify-content: center; margin: 0 auto 8px; color: var(--text-2);
+    }
+    .ep-icon svg { width: 16px; height: 16px; }
+    .element-picker-item:hover .ep-icon { background: var(--accent-light); color: var(--accent); }
+    .ep-label { font-size: 12px; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+    .ep-desc  { font-size: 10.5px; color: var(--text-3); line-height: 1.3; }
+    .element-picker-item:hover .ep-label { color: var(--accent-text); }
+
+    /* ── Sticky column block cards ──────────────────────── */
+    .sticky-block-card {
+      border: 1.5px solid var(--border);
+      border-radius: var(--r-md);
+      background: white;
+      padding: 10px;
+      cursor: pointer;
+      transition: all var(--t-fast);
+      position: relative;
+    }
+    .sticky-block-card:hover { border-color: var(--accent-mid); box-shadow: 0 2px 8px rgba(22,163,74,0.1); }
+    .sticky-block-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-light);
+      box-shadow: 0 0 0 2px rgba(22,163,74,0.18), 0 2px 8px rgba(22,163,74,0.12);
+    }
+
+    .sticky-block-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; color: var(--text-3);
+      margin-bottom: 8px;
+    }
+    .sticky-block-label svg { width: 11px; height: 11px; }
+    .sticky-block-card.selected .sticky-block-label { color: var(--accent-text); }
+
+    .sticky-block-badge {
+      margin-left: auto;
+      font-size: 9.5px; font-weight: 600; text-transform: none; letter-spacing: 0;
+      background: var(--surface-3); color: var(--text-3);
+      padding: 1px 7px; border-radius: var(--r-full);
+    }
+    .sticky-block-card.selected .sticky-block-badge { background: rgba(22,163,74,0.15); color: var(--accent-text); }
+
+    .sticky-block-selection-ring {
+      margin-top: 8px; padding: 6px 10px;
+      background: rgba(22,163,74,0.08); border: 1px solid var(--accent-mid);
+      border-radius: var(--r-sm);
+      font-size: 11px; font-weight: 500; color: var(--accent-text);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .sticky-block-selection-ring::before { content: '✓'; font-weight: 700; }
+
+    /* ── Canvas zone labels ─────────────────────────────── */
+    .canvas-zone-label {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 9.5px; font-weight: 700; color: var(--text-4);
+      text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 5px 8px; margin-bottom: 4px;
+      background: rgba(0,0,0,0.025);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: var(--r-sm);
+    }
+    .canvas-zone-label svg { width: 10px; height: 10px; flex-shrink: 0; }
+
+    /* ── Add-to-sticky button ────────────────────────────── */
+    .add-sticky-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 7px 12px;
+      border: 1.5px dashed var(--accent-mid);
+      border-radius: var(--r-md);
+      background: var(--accent-light);
+      color: var(--accent-text);
+      font-size: 11.5px; font-weight: 600;
+      cursor: pointer;
+      transition: all var(--t-fast);
+    }
+    .add-sticky-btn:hover {
+      border-color: var(--accent); background: #dcfce7;
+      box-shadow: 0 2px 8px rgba(22,163,74,0.15);
+    }
+    .add-sticky-btn svg { width: 13px; height: 13px; }
+
+    /* ── Canvas inline block (cover / callout elements) ─── */
+    .canvas-inline-block {
+      cursor: pointer;
+      border-radius: var(--r-sm);
+      transition: all var(--t-fast);
+      outline: 2px solid transparent;
+      outline-offset: 3px;
+    }
+    .canvas-inline-block:hover { outline-color: rgba(22,163,74,0.35); }
+    .canvas-inline-block.sel  { outline-color: var(--accent); background: rgba(22,163,74,0.08); }
+
+    /* ── Sticky area when something is selected ──────────── */
+    .canvas-sticky-area.has-selection {
+      background: #F0FDF4;
+    }
   </style>
 </head>
 <body>
 <div class="builder-app">
   <!-- ── 1. Sidebar ─────────────────────────────────────── -->
-  <div id="sidebar"></div>
+  <!-- width: 252px spacer so the fixed sidebar doesn't overlap the section list -->
+  <div id="sidebar" style="width:252px;flex-shrink:0;"></div>
 
   <!-- ── 2. Main area (section list + canvas + inspector) ─ -->
   <div style="flex:1;display:flex;min-width:0;overflow:hidden;">
 
     <!-- Section List -->
     <div class="section-list">
-      <div class="section-list-hd">
-        <span>Sections</span>
-        <span id="section-count" style="font-size:11px;font-weight:500;color:var(--text-3);background:var(--surface-3);padding:1px 7px;border-radius:var(--r-full);">5</span>
+      <div class="section-list-hd" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <span>Sections</span>
+          <span id="section-count" style="font-size:11px;font-weight:500;color:var(--text-3);background:var(--surface-3);padding:1px 7px;border-radius:var(--r-full);">5</span>
+        </div>
+        <span id="story-title-display" style="font-size:11px;font-weight:600;color:var(--text-2);text-transform:none;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">Q4 2025 — Revenue in Focus</span>
       </div>
       <div class="section-list-body" id="section-list-body">
         <!-- rendered by JS -->
@@ -513,6 +679,20 @@
   <div class="preview-frame">
     <div class="preview-iframe-wrap" id="preview-iframe-wrap">
       <iframe src="scrollyteller-example.html" id="preview-iframe"></iframe>
+    </div>
+  </div>
+</div>
+
+<!-- ── Element Picker Modal ──────────────────────────────── -->
+<div class="modal-overlay" id="element-picker-modal" onclick="if(event.target===this)closeElementPicker()">
+  <div class="element-picker-modal-box">
+    <div class="modal-title" id="element-picker-title">Add an element</div>
+    <div class="modal-sub" id="element-picker-sub">Choose what to insert. You can reorder and edit it in the inspector.</div>
+    <div class="element-picker-grid" id="element-picker-grid">
+      <!-- rendered by JS -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeElementPicker()">Cancel</button>
     </div>
   </div>
 </div>
