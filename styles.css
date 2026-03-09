@@ -69,7 +69,8 @@
   --border-focus:    #16A34A;
 
   /* Sizing */
-  --sidebar-w:       252px;
+  --sidebar-w:       220px;
+  --sidebar-w-col:   56px;
   --topbar-h:        60px;
 
   /* Radii */
@@ -142,6 +143,7 @@ input, select, textarea { font-family: var(--font); }
   overflow-y: auto;
   overflow-x: hidden;
   flex-shrink: 0;
+  transition: width 220ms ease;
 }
 
 /* Logo */
@@ -149,86 +151,139 @@ input, select, textarea { font-family: var(--font); }
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 22px 18px 18px;
+  padding: 18px 14px 14px;
+  flex-shrink: 0;
 }
 
 .logo-img {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   object-fit: contain;
   mix-blend-mode: screen;
   flex-shrink: 0;
   border-radius: var(--r-sm);
 }
 
-.logo-text { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; }
-.logo-sub  { font-size: 10px; color: var(--sidebar-text); font-weight: 400; letter-spacing: 0.4px; }
+.logo-wordmark { min-width: 0; overflow: hidden; }
+.logo-text { font-size: 15px; font-weight: 700; color: white; letter-spacing: -0.3px; white-space: nowrap; }
+.logo-sub  { font-size: 10px; color: var(--sidebar-text); font-weight: 400; letter-spacing: 0.4px; white-space: nowrap; }
 
 /* Nav sections */
-.nav-section { padding: 0 10px; margin-bottom: 2px; }
+.nav-section { padding: 0 8px; margin-bottom: 2px; }
 
 .nav-label {
   font-size: 10px; font-weight: 600;
   letter-spacing: 0.9px; text-transform: uppercase;
   color: var(--sidebar-text);
-  padding: 14px 10px 5px;
+  padding: 14px 8px 5px;
   opacity: 0.55;
+  white-space: nowrap; overflow: hidden;
+  transition: opacity var(--t-fast);
 }
 
 .nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 10px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 9px;
   border-radius: var(--r-md);
   color: var(--sidebar-text);
-  font-size: 13.5px; font-weight: 500;
+  font-size: 13px; font-weight: 500;
   cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
   margin-bottom: 1px;
   user-select: none;
+  white-space: nowrap;
 }
 
 .nav-item:hover  { background: var(--sidebar-hover);  color: #D0D5EA; }
 .nav-item.active { background: var(--sidebar-active); color: var(--sidebar-text-hi); }
 
-.nav-item .ni { width: 17px; height: 17px; flex-shrink: 0; opacity: 0.75; }
+.nav-item .ni { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
 .nav-item.active .ni { opacity: 1; }
+
+.nav-item-text { overflow: hidden; }
 
 .nav-badge {
   margin-left: auto;
   background: var(--sidebar-active);
   color: var(--sidebar-text);
   font-size: 11px; font-weight: 600;
-  padding: 1px 7px; border-radius: var(--r-full);
-  min-width: 20px; text-align: center;
+  padding: 1px 6px; border-radius: var(--r-full);
+  min-width: 18px; text-align: center;
 }
 .nav-item.active .nav-badge { background: rgba(22,163,74,0.3); color: var(--accent-mid); }
 
 /* Footer */
 .sidebar-footer {
   margin-top: auto;
-  padding: 10px;
+  padding: 8px;
   border-top: 1px solid var(--sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
+/* Collapse toggle button */
+.sidebar-toggle {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 9px;
+  border-radius: var(--r-md);
+  border: none; background: none;
+  color: var(--sidebar-text);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  width: 100%;
+  white-space: nowrap;
+}
+.sidebar-toggle:hover { background: var(--sidebar-hover); color: #D0D5EA; }
+.sidebar-toggle i { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.75; }
+.toggle-icon-closed { display: none !important; }
+
 .sidebar-user {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 9px;
   border-radius: var(--r-md);
   cursor: pointer;
   transition: background var(--t-fast);
+  white-space: nowrap;
 }
 .sidebar-user:hover { background: var(--sidebar-hover); }
 
 .user-avatar {
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   border-radius: 50%;
   background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
-  color: white; font-size: 13px; font-weight: 600;
+  color: white; font-size: 12px; font-weight: 600;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 
 .user-name  { font-size: 13px; font-weight: 500; color: white; }
 .user-role  { font-size: 11px; color: var(--sidebar-text); }
+
+/* ============================================================
+   SIDEBAR — COLLAPSED STATE
+   ============================================================ */
+body.sidebar-collapsed .sidebar { width: var(--sidebar-w-col); }
+
+body.sidebar-collapsed .nav-label,
+body.sidebar-collapsed .nav-item-text,
+body.sidebar-collapsed .nav-badge,
+body.sidebar-collapsed .logo-wordmark,
+body.sidebar-collapsed .user-name,
+body.sidebar-collapsed .user-role,
+body.sidebar-collapsed .sidebar-user > i { display: none; }
+
+body.sidebar-collapsed .sidebar-logo { padding: 16px 0 12px; justify-content: center; }
+body.sidebar-collapsed .nav-section  { padding: 0 4px; }
+body.sidebar-collapsed .nav-item     { justify-content: center; padding: 9px 0; gap: 0; }
+body.sidebar-collapsed .nav-item .ni { opacity: 0.85; }
+body.sidebar-collapsed .nav-item.active .ni { opacity: 1; }
+body.sidebar-collapsed .sidebar-footer { padding: 8px 4px; }
+body.sidebar-collapsed .sidebar-toggle { justify-content: center; padding: 9px 0; gap: 0; }
+body.sidebar-collapsed .sidebar-user   { justify-content: center; padding: 8px 0; gap: 0; }
+
+body.sidebar-collapsed .toggle-icon-open   { display: none !important; }
+body.sidebar-collapsed .toggle-icon-closed { display: block !important; }
 
 /* ============================================================
    MAIN AREA
@@ -240,7 +295,10 @@ input, select, textarea { font-family: var(--font); }
   flex-direction: column;
   min-height: 100vh;
   min-width: 0;
+  transition: margin-left 220ms ease;
 }
+
+body.sidebar-collapsed .main { margin-left: var(--sidebar-w-col); }
 
 /* Top Bar */
 .topbar {

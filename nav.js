@@ -38,7 +38,7 @@ function buildSidebar(activeId) {
     <aside class="sidebar">
       <div class="sidebar-logo">
         <img src="logo.png" class="logo-img" alt="Reportr">
-        <div>
+        <div class="logo-wordmark">
           <div class="logo-text">Reportr</div>
           <div class="logo-sub">Analytics Platform</div>
         </div>
@@ -51,9 +51,9 @@ function buildSidebar(activeId) {
       const isActive = item.id === activeId;
       const badge = item.badge ? `<span class="nav-badge">${item.badge}</span>` : '';
       html += `
-        <a href="${item.href}" class="nav-item${isActive ? ' active' : ''}">
+        <a href="${item.href}" class="nav-item${isActive ? ' active' : ''}" title="${item.label}">
           <i data-lucide="${item.icon}" class="ni"></i>
-          ${item.label}
+          <span class="nav-item-text">${item.label}</span>
           ${badge}
         </a>
       `;
@@ -63,6 +63,11 @@ function buildSidebar(activeId) {
 
   html += `
       <div class="sidebar-footer">
+        <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+          <i data-lucide="panel-left-close" class="toggle-icon-open"></i>
+          <i data-lucide="panel-left-open" class="toggle-icon-closed"></i>
+          <span class="nav-item-text">Collapse</span>
+        </button>
         <div class="sidebar-user">
           <div class="user-avatar">DM</div>
           <div>
@@ -77,4 +82,14 @@ function buildSidebar(activeId) {
 
   target.innerHTML = html;
   if (window.lucide) lucide.createIcons();
+
+  // Restore collapsed state
+  if (localStorage.getItem('sidebarCollapsed') === 'true') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+
+  document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+    const collapsed = document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('sidebarCollapsed', collapsed);
+  });
 }

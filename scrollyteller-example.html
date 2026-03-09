@@ -356,6 +356,99 @@
     .reveal-delay-2 { transition-delay: 0.2s; }
     .reveal-delay-3 { transition-delay: 0.3s; }
 
+    /* ═══════════════════════════════════════════════════════════
+       FULL-BLEED STICKY SECTION
+    ═══════════════════════════════════════════════════════════ */
+    /*
+      Technique: sticky background has margin-bottom: -100vh so it
+      takes up zero height in the flow. Cards sit on top of it
+      because they come next in the DOM at the same visual position.
+    */
+    .fullbleed-section { position: relative; }
+
+    .fullbleed-bg {
+      position: sticky; top: 0; height: 100vh;
+      margin-bottom: -100vh; /* key: pulls subsequent content up */
+      z-index: 0; overflow: hidden;
+      background: #060c18;
+    }
+    .fullbleed-bg canvas { width: 100% !important; height: 100% !important; display: block; }
+    .fullbleed-bg-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(160deg, rgba(6,12,24,0.3) 0%, rgba(6,12,24,0.6) 100%);
+    }
+    .fullbleed-bg-label {
+      position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px;
+      color: rgba(255,255,255,0.4); white-space: nowrap;
+    }
+    .fullbleed-bg-annotation {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px; padding: 10px 18px;
+      font-size: 13px; color: rgba(255,255,255,0.85); text-align: center;
+      max-width: 480px; width: 90%; transition: all 0.5s var(--ease);
+      min-height: 46px; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Cards that scroll over the sticky background */
+    .fullbleed-cards {
+      position: relative; z-index: 10;
+      padding: 15vh 5% 20vh;
+      display: flex; flex-direction: column; gap: 0;
+    }
+    .fullbleed-card-step {
+      min-height: 75vh;
+      display: flex; align-items: center;
+      padding: 40px 0;
+    }
+    .fullbleed-card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.6);
+      border-radius: 16px;
+      padding: 28px 30px;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      opacity: 0.4; transform: translateY(12px);
+      transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+    }
+    .fullbleed-card-step.active .fullbleed-card {
+      opacity: 1; transform: translateY(0);
+    }
+    .fullbleed-card-step-num {
+      font-size: 10px; font-weight: 800; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--green); margin-bottom: 8px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .fullbleed-card-step-num::before { content:''; width:16px; height:2px; background:var(--green); display:inline-block; }
+    .fullbleed-card-heading { font-size: 20px; font-weight: 800; color: var(--text-1); line-height: 1.2; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .fullbleed-card-body { font-size: 14px; color: var(--text-2); line-height: 1.65; }
+    .fullbleed-card-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--green-light); color: var(--green-text);
+      font-size: 11.5px; font-weight: 700; padding: 4px 12px;
+      border-radius: 16px; margin-top: 12px;
+      border: 1px solid var(--green-mid);
+    }
+
+    /* Step dots for fullbleed */
+    .fullbleed-step-dots {
+      position: fixed; right: 24px; top: 50%; transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 8px; z-index: 20;
+      opacity: 0; transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .fullbleed-step-dots.visible { opacity: 1; pointer-events: all; }
+    .fb-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.35); border: 1.5px solid rgba(255,255,255,0.5);
+      cursor: pointer; transition: all 0.3s;
+    }
+    .fb-dot.active { background: var(--green); border-color: var(--green); transform: scale(1.4); }
+
     /* ── Mobile tweaks ──────────────────────────────────── */
     @media (max-width: 700px) {
       .sticky-section, .sticky-section.flipped {
@@ -499,6 +592,67 @@
   <div class="callout-label reveal reveal-delay-1">YoY growth in APAC</div>
   <p class="callout-sub reveal reveal-delay-2">The biggest single-region gain in company history — driven by two enterprise deals and a new partnership channel.</p>
   <div class="callout-chip reveal reveal-delay-3">🏆 Record quarter</div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     SECTION 3b — FULL-BLEED (sticky bg + cards scroll over)
+═══════════════════════════════════════════════════ -->
+<section class="fullbleed-section" id="channel-section" data-section="channel">
+
+  <!-- Fixed navigation dots -->
+  <div class="fullbleed-step-dots" id="fb-dots">
+    <div class="fb-dot active" data-fb-step="0"></div>
+    <div class="fb-dot" data-fb-step="1"></div>
+    <div class="fb-dot" data-fb-step="2"></div>
+  </div>
+
+  <!-- Sticky full-viewport background -->
+  <div class="fullbleed-bg" id="fb-bg">
+    <canvas id="channel-chart"></canvas>
+    <div class="fullbleed-bg-overlay"></div>
+    <div class="fullbleed-bg-label" id="fb-label">Revenue by Channel · Q4 2025</div>
+    <div class="fullbleed-bg-annotation" id="fb-annotation">Scroll to explore channel performance</div>
+  </div>
+
+  <!-- Cards that scroll over the background -->
+  <div class="fullbleed-cards">
+
+    <div class="fullbleed-card-step" data-section="channel" data-step="0">
+      <div class="fullbleed-card">
+        <div class="fullbleed-card-step-num">Channel Breakdown</div>
+        <h2 class="fullbleed-card-heading">Three channels, one record quarter</h2>
+        <p class="fullbleed-card-body">Q4 2025 saw all three revenue channels hit new highs simultaneously — a first. Direct led by volume, Partner led by growth rate, and Self-serve crossed a symbolic milestone.</p>
+      </div>
+    </div>
+
+    <div class="fullbleed-card-step" data-section="channel" data-step="1">
+      <div class="fullbleed-card">
+        <div class="fullbleed-card-step-num">Direct Sales</div>
+        <h2 class="fullbleed-card-heading">Direct beats its own forecast</h2>
+        <p class="fullbleed-card-body">Direct sales contributed <strong>$7.3M</strong> — 48% of total Q4 revenue and the channel's best share in three years. Enterprise deal sizes grew 22% as buyers consolidated spend.</p>
+        <div class="fullbleed-card-badge">+22% deal size YoY</div>
+      </div>
+    </div>
+
+    <div class="fullbleed-card-step" data-section="channel" data-step="2">
+      <div class="fullbleed-card">
+        <div class="fullbleed-card-step-num">Partner Channel</div>
+        <h2 class="fullbleed-card-heading">Partner revenue surges 62%</h2>
+        <p class="fullbleed-card-body">Three new reseller agreements signed in September began generating revenue in October. Partner-led ARR is now <strong>$4.6M</strong> — up from $2.8M in Q3.</p>
+        <div class="fullbleed-card-badge">🤝 3 new resellers active</div>
+      </div>
+    </div>
+
+    <div class="fullbleed-card-step" data-section="channel" data-step="3">
+      <div class="fullbleed-card">
+        <div class="fullbleed-card-step-num">Self-Serve</div>
+        <h2 class="fullbleed-card-heading">Self-serve crosses $1M ARR</h2>
+        <p class="fullbleed-card-body">Product-led growth is working. Self-serve ARR crossed <strong>$1M</strong> for the first time in Q4, with 340 new accounts activated without any sales touch.</p>
+        <div class="fullbleed-card-badge">🚀 $1M milestone</div>
+      </div>
+    </div>
+
+  </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════
@@ -853,6 +1007,64 @@ function getStepMoniker(section, step) {
   return '';
 }
 
+/* ── CHANNEL (FULL-BLEED) DATA & CHART ───────────────────── */
+const CHANNEL_STEPS = [
+  { highlight: [0,1,2,3], annotation: 'All channels hit new Q4 highs. Total: <strong>$15.1M</strong>.' },
+  { highlight: [0],        annotation: '📊 Direct: <strong>$7.3M</strong> — 48% of Q4 revenue. Deal sizes +22% YoY.' },
+  { highlight: [1],        annotation: '🤝 Partner: <strong>$4.6M</strong> — up 62% QoQ. Three new resellers active.' },
+  { highlight: [2],        annotation: '🚀 Self-serve: <strong>$1.8M</strong> — crossed $1M ARR milestone for the first time.' },
+];
+
+let channelChart = null;
+let currentChannelStep = 0;
+
+function buildChannelChart() {
+  const canvas = document.getElementById('channel-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  channelChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Direct','Partner','Self-serve','Events'],
+      datasets: [{
+        data: [7.3, 4.6, 1.8, 1.4],
+        backgroundColor: [GREEN, GREEN, GREEN, GREEN],
+        borderRadius: 10, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 600, easing: 'easeInOutQuart' },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.y}M` } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 14, weight: '600' }, color: 'rgba(255,255,255,0.6)' } },
+        y: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { font: { size: 12 }, color: 'rgba(255,255,255,0.4)', callback: v => `$${v}M` }, beginAtZero: true, max: 9 }
+      }
+    }
+  });
+}
+
+function setChannelStep(step) {
+  if (step === currentChannelStep && channelChart) return;
+  currentChannelStep = step;
+  const s = CHANNEL_STEPS[step];
+  const labels = ['Direct','Partner','Self-serve','Events'];
+  channelChart.data.datasets[0].backgroundColor = labels.map((_,i) =>
+    s.highlight.includes(i) ? '#16A34A' : 'rgba(255,255,255,0.15)'
+  );
+  channelChart.update();
+  document.getElementById('fb-annotation').innerHTML = s.annotation;
+
+  // Update side dots
+  document.querySelectorAll('.fb-dot').forEach((d,i) => d.classList.toggle('active', i === step));
+}
+
+function updateFbDotVisibility(visible) {
+  const dots = document.getElementById('fb-dots');
+  if (dots) dots.classList.toggle('visible', visible);
+}
+
 /* ── SCROLL OBSERVER ──────────────────────────────────────── */
 function initScrollObserver() {
   const stepEls = document.querySelectorAll('.scroll-step');
@@ -863,8 +1075,9 @@ function initScrollObserver() {
         entry.target.classList.add('active');
         const section = entry.target.dataset.section;
         const step    = parseInt(entry.target.dataset.step);
-        if (section === 'region') setRegionStep(step);
-        if (section === 'trend')  setTrendStep(step);
+        if (section === 'region')  setRegionStep(step);
+        if (section === 'trend')   setTrendStep(step);
+        if (section === 'channel') setChannelStep(step);
       } else {
         entry.target.classList.remove('active');
       }
@@ -872,6 +1085,25 @@ function initScrollObserver() {
   }, { threshold: 0.5 });
 
   stepEls.forEach(el => observer.observe(el));
+}
+
+/* ── FULLBLEED SECTION VISIBILITY (for side dots) ────────── */
+function initFullbleedVisibility() {
+  const section = document.getElementById('channel-section');
+  if (!section) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => updateFbDotVisibility(e.isIntersecting));
+  }, { threshold: 0.1 });
+  obs.observe(section);
+
+  // Clickable dots
+  document.querySelectorAll('.fb-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const step = parseInt(dot.dataset.fbStep);
+      const stepEl = document.querySelector(`[data-section="channel"][data-step="${step}"]`);
+      if (stepEl) stepEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  });
 }
 
 /* ── REVEAL OBSERVER ─────────────────────────────────────── */
@@ -923,10 +1155,12 @@ function animateCounters() {
 /* ── INIT ─────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
   buildRegionChart();
+  buildChannelChart();
   buildTrendChart();
   initScrollObserver();
   initRevealObserver();
   initProgressBar();
+  initFullbleedVisibility();
 
   // Trigger counter animation after a short delay (cover is visible on load)
   setTimeout(animateCounters, 400);
